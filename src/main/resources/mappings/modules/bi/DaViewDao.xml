@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.movit.rwe.modules.bi.base.dao.mysql.DaViewDao">
+
+	<sql id="view_allColumns">
+		cb_da_view.id,
+	    cb_da_view.name,
+	    cb_da_view.title,
+	    cb_da_view.taId,
+	    cb_da_view.studyId,
+	    cb_da_view.viewType,
+	    cb_da_view.confJsonStr,
+	    cb_da_view.remarks,
+	    cb_da_view.createBy,
+	    cb_da_view.createDate,
+	    cb_da_view.updateBy,
+	    cb_da_view.updateDate,
+	    cb_da_view.delFlag
+	</sql>
+
+	<select id="get" resultType="com.movit.rwe.modules.bi.base.entity.mysql.DaView">
+		SELECT
+		<include refid="view_allColumns" />
+		FROM cb_da_view
+		WHERE cb_da_view.delFlag = 0 and cb_da_view.id = #{id}
+	</select>
+	
+	<select id="findAllList" resultType="com.movit.rwe.modules.bi.base.entity.mysql.DaView">
+		SELECT
+		<include refid="view_allColumns" />
+		FROM cb_da_view
+		WHERE cb_da_view.delFlag = 0 
+		order by cb_da_view.createDate desc
+	</select>
+	
+	<select id="findAllWsShowList" resultType="com.movit.rwe.modules.bi.da.vo.WorkSpaceDaViewShowVo">
+		SELECT
+		dv.*,
+		study.studyName,
+		ta.taName
+		FROM cb_da_view dv
+		left join md_study study on dv.studyId=study.id
+		left join md_ta ta on study.taId=ta.id
+		WHERE dv.delFlag = 0 
+		order by dv.createDate desc
+	</select>	
+	
+	<select id="findAllWsShowListByUserId" resultType="com.movit.rwe.modules.bi.da.vo.WorkSpaceDaViewShowVo">
+		SELECT
+		dv.*,
+		study.studyName,
+		ta.taName
+		FROM cb_da_view dv
+		left join md_study study on dv.studyId=study.id
+		left join md_ta ta on study.taId=ta.id
+		WHERE dv.delFlag = 0 
+		and dv.createBy = #{userId}
+		and exists(select * from md_user_study mdus where dv.studyId = mdus.studyId and mdus.userId = #{userId} and mdus.delFlag = 0 )
+		order by dv.createDate desc
+	</select>
+
+	<update id="update">
+		UPDATE cb_da_view SET 
+			    name = #{name},
+			    title = #{title},
+			    taId = #{taId},
+			    studyId = #{studyId},
+			    viewType = #{viewType},
+			    confJsonStr = #{confJsonStr},
+			    <!-- remarks = #{}, -->
+			    updateBy = #{updateBy.id},
+			    updateDate  = #{updateDate}
+		WHERE id = #{id}
+	</update>
+	
+	<update id="insert">
+		INSERT INTO cb_da_view
+		(
+			id,
+			name,
+			title,
+			taId,
+			studyId,
+			viewType,
+			confJsonStr,
+			remarks,
+			createBy,
+			createDate,
+			updateBy,
+			updateDate,
+			delFlag
+		)
+		VALUES
+		(
+			#{id},
+			#{name},
+			#{title},
+			#{taId},
+			#{studyId},
+			#{viewType},
+			#{confJsonStr},
+			#{remarks},
+			#{createBy.id},
+			#{createDate},
+			#{updateBy.id},
+			#{updateDate},
+			#{delFlag}
+		)
+	</update>
+
+	<select id="findListByStudyId" resultType="com.movit.rwe.modules.bi.base.entity.mysql.DaView">
+		SELECT
+		<include refid="view_allColumns" />
+		FROM cb_da_view
+		where
+		cb_da_view.delFlag=0
+		and
+		cb_da_view.studyId=#{studyId} 
+		order by cb_da_view.createDate desc
+	</select>
+	
+	<update id="delete">
+		UPDATE cb_da_view SET 
+			delFlag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id} 
+	</update>
+</mapper>

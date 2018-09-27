@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.movit.rwe.modules.bi.base.dao.hive.EffectionDictDao">
+
+
+	<select id="getAll"
+		resultType="com.movit.rwe.modules.bi.base.entity.hive.EffectionDict">
+		select 
+		guid as "guid",
+		effection_name as "effectionName",
+		parent_effection_guid as "parentEffectionGuid"
+		from
+		effection_dict
+	</select>
+
+</mapper>

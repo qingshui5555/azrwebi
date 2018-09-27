@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.movit.rwe.modules.bi.base.dao.hive.MedDosingScheduleDao">
+
+	<select id="getTreatmentDrug" resultType="java.util.Map">
+		select m.drug,m.treatment_id from med_dosing_schedule m
+		left join
+		patient_group_info p
+		on
+		m.patient_guid=p.patient_id
+		left join treatment t
+		on
+		m.treatment_id=t.guid
+		where
+		t.study_id=#{studyId}
+		<choose>
+			<when test="cohorts.length==0">
+				and p.groupids like ''
+			</when>
+			<otherwise>
+				<if test="!(cohorts.length==1 and cohorts[0]=='%%')">
+					<foreach collection="cohorts" item="cohort" open="and ("
+						close=")" separator="or">
+						p.groupids like #{cohort}
+					</foreach>
+				</if>
+			</otherwise>
+		</choose>
+	</select>
+</mapper>

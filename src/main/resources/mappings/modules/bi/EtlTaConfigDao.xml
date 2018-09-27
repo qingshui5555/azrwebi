@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.movit.rwe.modules.bi.base.dao.mysql.EtlTaConfigDao">
+    
+	<sql id="columns">
+		id,
+	    ta_abbr_name as taAbbrName,
+	    ta_full_name as taFullName,
+	    ta_code as taCode,
+	    ta_sort as taSort,
+	    status as status,
+	    create_by as createBy,
+	    create_on as createOn,
+	    modify_by as modifyBy,
+	    modify_on as modifyOn,
+	    version
+	</sql>
+	
+	    
+	<select id="queryList" resultType="com.movit.rwe.modules.bi.base.entity.mysql.EtlTaConfig">
+		select <include refid="columns"/> from etl_ta_config order by ta_sort
+	</select>
+	
+</mapper>

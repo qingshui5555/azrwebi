@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.movit.rwe.modules.bi.base.dao.mysql.TaDao">
+    
+	<sql id="ta_allColumns">
+		`md_ta`.`id`,
+	    `md_ta`.`taName`,
+	    `md_ta`.`taCode`,
+	    `md_ta`.`sort`,
+	    `md_ta`.`remarks`,
+	    `md_ta`.`createBy`,
+	    `md_ta`.`createDate`,
+	    `md_ta`.`updateBy`,
+	    `md_ta`.`updateDate`,
+	    `md_ta`.`delFlag`
+	</sql>
+	
+	    
+	<select id="findList" resultType="com.movit.rwe.modules.bi.base.entity.mysql.Ta">
+		SELECT 
+			<include refid="ta_allColumns"/>
+		FROM md_ta 
+		WHERE `md_ta`.`delFlag` = 0
+		order by
+			`md_ta`.`sort`
+	</select>
+    
+	<select id="get" resultType="com.movit.rwe.modules.bi.base.entity.mysql.Ta">
+		SELECT 
+			<include refid="ta_allColumns"/>
+		FROM md_ta 
+		WHERE md_ta.id = #{id} and `md_ta`.`delFlag` = 0
+	</select>
+
+	<select id="getByStudyId" resultType="com.movit.rwe.modules.bi.base.entity.mysql.Ta">
+		SELECT
+		mt.id, mt.taName, mt.taCode, mt.sort, mt.remarks, mt.createBy, mt.createDate, mt.updateBy, mt.updateDate, mt.delFlag
+		FROM md_ta mt left join etl_study_config esc on mt.id = esc.ta_id
+		WHERE esc.study_id = #{studyId} and mt.delFlag = 0
+	</select>
+</mapper>

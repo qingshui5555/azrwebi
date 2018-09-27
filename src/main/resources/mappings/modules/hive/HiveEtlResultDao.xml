@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.movit.rwe.modules.bi.base.dao.hive.HiveEtlResultDao">
+
+	<select id="queryListAll" resultType="com.movit.rwe.modules.bi.base.entity.hive.HiveEtlResult">
+		select r.guid, r.etl_type as etlType, r.indicator_type as indicatorType, r.indicator, r.indicator_description as indicatorDescription, r.study_id as studyId, r.patient_id as patientId,
+		r.visit_id as visitId, r.reference_code as referenceCode, r.result, r.result_unit as resultUnit, r.lower_ref as lowerRef, r.upper_ref as upperRef,
+		r.evaluation, r.assay_date as assayDate, r.create_by as createBy, r.create_on as createOn
+		from rwebox.result r
+		where 1=1
+		<if test="studyIds != null and studyIds.length > 0">
+			and r.study_id in
+			<foreach collection="studyIds" item="studyId" open="(" close=")" separator=",">
+				#{studyId}
+			</foreach>
+		</if>
+	</select>
+</mapper>

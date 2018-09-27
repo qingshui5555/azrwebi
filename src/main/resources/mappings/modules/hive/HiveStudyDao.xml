@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.movit.rwe.modules.bi.base.dao.hive.HiveStudyDao">
+
+	<select id="queryListAll" resultType="com.movit.rwe.modules.bi.base.entity.hive.HiveStudy">
+	  select distinct s.guid as guid, s.study_name as studyName, s.study_code as studyCode, s.create_by as createBy, s.create_on as createOn, p.patientCount as patientCount
+	  from rwebox.study s left join (select study_id, count(distinct patient_id) as patientCount from rwebox.result_demographic group by study_id) p on s.guid = p.study_id
+	  where 1=1
+		<if test="studyIds != null and studyIds.length > 0">
+			and s.guid in
+			<foreach collection="studyIds" item="studyId" open="(" close=")" separator=",">
+				#{studyId}
+			</foreach>
+		</if>
+	</select>
+</mapper>

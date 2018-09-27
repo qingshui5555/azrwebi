@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.movit.rwe.modules.bi.base.dao.mysql.DaTestModelDao">
+
+	<sql id="daTestModelColumnMetaColumns">
+		cb_da_test_model.id,
+		cb_da_test_model.name,
+		cb_da_test_model.daTestName,
+		cb_da_test_model.modelName,
+		cb_da_test_model.summaryJsonStr,
+		cb_da_test_model.daConfJsonStr,
+		cb_da_test_model.remarks,
+		cb_da_test_model.createBy,
+		cb_da_test_model.createDate,
+		cb_da_test_model.updateBy,
+		cb_da_test_model.updateDate,
+		cb_da_test_model.delFlag
+	</sql>
+	
+	<insert id="insert">
+		INSERT INTO cb_da_test_model
+		(
+			id,
+			name,
+			daTestName,
+			modelName,
+			summaryJsonStr,
+			daConfJsonStr,
+			remarks,
+			createBy,
+			createDate,
+			updateBy,
+			updateDate,
+			delFlag
+		)
+		VALUES
+		(
+			#{id},
+			#{name},
+			#{daTestName},
+			#{modelName},
+			#{summaryJsonStr},
+			#{daConfJsonStr},
+			#{remarks},
+			#{createBy.id},
+			#{createDate},
+			#{updateBy.id},
+			#{updateDate},
+			#{delFlag}
+		)
+	</insert>
+	
+	<select id="get" resultType="com.movit.rwe.modules.bi.base.entity.mysql.DaTestModel">
+		SELECT 
+		   <include refid="daTestModelColumnMetaColumns"/>
+		FROM
+		    cb_da_test_model
+		WHERE
+		    cb_da_test_model.delFlag = '0'
+		    and
+		    cb_da_test_model.id=#{id}
+	</select>
+	
+	<select id="findListByTestName" resultType="com.movit.rwe.modules.bi.base.entity.mysql.DaTestModel">
+		SELECT 
+		   <include refid="daTestModelColumnMetaColumns"/>
+		FROM
+		    cb_da_test_model
+		WHERE
+		    cb_da_test_model.delFlag = '0'
+		AND cb_da_test_model.daTestName = #{testName}
+		ORDER BY cb_da_test_model.updateDate DESC
+	</select>
+
+
+</mapper>

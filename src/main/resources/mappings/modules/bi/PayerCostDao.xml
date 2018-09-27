@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.movit.rwe.modules.bi.base.dao.hive.PayerCostDao">
+    
+	
+	<select id="getPayerCost"   resultType="com.movit.rwe.modules.bi.base.entity.hive.PayerCost" >
+	    select c.item as "item",
+	    sum(c.amount) as "amount",
+	    c.unit from cost c
+	    left join patient_group_info p
+		on c.patient_id=p.patient_id
+	    where 
+	    c.study_id=#{studyId} 
+		<choose>
+			<when test="cohortQuery.length==0">
+				and p.groupids like ''
+			</when>
+			<otherwise>
+				<if test="!(cohortQuery.length==1 and cohortQuery[0]=='%%')">
+					<foreach collection="cohortQuery" item="cohort" open="and ("
+						close=")" separator="or">
+						p.groupids like #{cohort}
+					</foreach>
+				</if>
+			</otherwise>
+		</choose>
+		<if test="startDate!=null">and c.cost_date &gt;= #{startDate}</if>
+		<if test="endDate!=null">and c.cost_date &lt;= #{endDate}</if>
+
+	    group by item,unit,sort_value order by sort_value
+	</select>
+	
+	
+	<select id="getDetailPayerCost" resultType="java.util.Map">
+		select 
+	    sum(c.self_paid/10) as "selfPaid",
+	    sum(c.individual_self_paid/10) as "individualSelfPaid",
+	    sum(c.other_paid/10) as "otherPaid",
+	    c.unit from cost c
+	    left join patient_group_info p
+		on c.patient_id=p.patient_id
+	    where 
+	    c.study_id=#{studyId} 
+		<choose>
+			<when test="cohortQuery.length==0">
+				and p.groupids like ''
+			</when>
+			<otherwise>
+				<if test="!(cohortQuery.length==1 and cohortQuery[0]=='%%')">
+					<foreach collection="cohortQuery" item="cohort" open="and ("
+						close=")" separator="or">
+						p.groupids like #{cohort}
+					</foreach>
+				</if>
+			</otherwise>
+		</choose>
+		<if test="startDate!=null">and c.cost_date &gt;= #{startDate}</if>
+		<if test="endDate!=null">and c.cost_date &lt;= #{endDate}</if>
+
+	    group by c.visit_id,c.unit
+	</select>
+</mapper>

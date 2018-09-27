@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.movit.rwe.modules.bi.base.dao.mysql.RweUserStudyDao">
+
+	<select id="getRweUserStudyIds" resultType="string">
+		select GROUP_CONCAT(studyUseMap.study_id) as studyIds
+		from users,study_user_map studyUseMap
+		where users.user_id = studyUseMap.user_id
+		and users.username = #{loginName}
+		GROUP BY studyUseMap.user_id 
+	</select>
+
+    <select id="getRweUserByLoginName" resultType="int">
+		select count(user_id)
+		from users
+		where users.username = #{loginName}
+	</select>
+    
+</mapper>

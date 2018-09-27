@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.movit.rwe.modules.bi.base.dao.hive.TreatmentDao">
+    
+	
+	<select id="getTreatment" resultType="com.movit.rwe.modules.bi.base.entity.hive.Treatment">
+		SELECT
+		guid as "guid",
+		patient_id as "patientId",
+		study_id as "studyId",
+		solution as "solution",
+		type as "type",
+		start_date as "startDate",
+		end_date as "endDate",
+		curative_effect as "curativeEffect",
+		cycle as "cycle"
+		FROM treatment
+		WHERE patient_id = #{patientId} and study_id = #{studyId}
+	</select>
+	
+	<select id="getSolutionByStudyId"  resultType="string">
+		SELECT
+		t.solution
+		FROM treatment t
+		left join patient_group_info p
+		on
+		t.patient_id=p.patient_id
+		WHERE t.study_id = #{studyId}
+		
+		<choose>
+			<when test="cohorts.length==0">
+				and p.groupids like ''
+			</when>
+			<otherwise>
+				<if test="!(cohorts.length==1 and cohorts[0]=='%%')">
+					<foreach collection="cohorts" item="cohort" open="and ("
+						close=")" separator="or">
+						p.groupids like #{cohort}
+					</foreach>
+				</if>
+			</otherwise>
+		</choose>
+		
+	    group by t.solution order by t.solution
+	</select>
+	
+</mapper>

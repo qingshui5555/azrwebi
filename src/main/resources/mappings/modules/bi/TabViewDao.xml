@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.movit.rwe.modules.bi.base.dao.mysql.TabViewDao">
+
+	<select id="checkTabViewExists" resultType="int">
+		SELECT
+		count(*)
+		FROM
+		cb_tab_view
+		WHERE cb_tab_view.delFlag = 0 and
+		cb_tab_view.tabId =
+		#{tabId} and cb_tab_view.viewId=#{viewId}
+	</select>
+
+	<insert id="insert">
+		INSERT INTO cb_tab_view(
+		id,
+		dashboardId,
+		tabId,
+		viewId,
+		viewType,
+		createBy,
+		createDate,
+		updateBy,
+		updateDate,
+		remarks,
+		delFlag,
+		size,
+		sort
+		)
+		VALUES (
+		#{id},
+		#{dashboardId},
+		#{tabId},
+		#{viewId},
+		#{viewType},
+		#{createBy.id},
+		#{createDate},
+		#{updateBy.id},
+		#{updateDate},
+		#{remarks},
+		#{delFlag},
+		#{size},
+		0
+		)
+	</insert>
+
+	<update id="delete">
+		UPDATE cb_tab_view SET
+		delFlag =
+		#{DEL_FLAG_DELETE},updateDate=#{updateDate},updateBy=#{updateBy.id}
+		WHERE id=#{id}
+	</update>
+
+	<update id="updateConfig">
+		UPDATE cb_tab_view SET
+		configJson =
+		#{configJson},alias=#{alias},viewChartHeight=#{viewChartHeight}
+		WHERE
+		id=#{tabViewId}
+	</update>
+
+	<select id="findConfigJson" resultType="string">
+		SELECT configJson FROM
+		cb_tab_view where
+		id=#{tabViewId} and delFlag=0;
+	</select>
+
+	<select id="findTabViewJsonByTabViewId" resultType="string">
+		SELECT
+		configJson FROM cb_tab_view where
+		id=#{tabViewId} and delFlag=0;
+	</select>
+
+	<select id="findHeightByTabViewId" resultType="string">
+		SELECT
+		viewChartHeight FROM cb_tab_view where
+		id=#{tabViewId} and delFlag=0;
+	</select>
+
+	<update id="deleteByViewId">
+		UPDATE cb_tab_view SET
+		delFlag = 1
+		WHERE viewId =
+		#{viewId}
+		and delFlag=0
+	</update>
+
+	<select id="findViewChartHeightByTabAndViewId" resultType="string">
+		SELECT
+		viewChartHeight FROM cb_tab_view where
+		id=#{tabViewId}  and delFlag=0
+	</select>
+	
+	<update id="updateSort">
+		UPDATE cb_tab_view SET
+		sort=#{sort}
+		WHERE id =
+		#{tabViewId}
+	</update>
+	
+	<sql id="tabViewColumns">
+		a.id,
+		a.dashboardId,
+		a.tabId,
+		a.viewId,
+		a.colType,
+		a.customTitleName,
+		a.configJson,
+		a.alias,
+		a.viewChartHeight,
+		a.viewType,
+		a.size,
+		a.sort,
+		a.createBy,
+		a.createDate,
+		a.updateBy,
+		a.updateDate,
+		a.remarks,
+		a.delFlag
+	</sql>
+	
+	<sql id="tabViewJoins">
+    </sql>
+    
+	<select id="findList" resultType="com.movit.rwe.modules.bi.base.entity.mysql.TabView">
+		SELECT 
+			<include refid="tabViewColumns"/>
+		FROM cb_tab_view a
+		<include refid="tabViewJoins"/>
+		WHERE a.delFlag = #{DEL_FLAG_NORMAL} 
+		<if test="viewId != null and viewId != ''">
+			AND a.viewId = #{viewId}
+		</if>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.sort ASC
+			</otherwise>
+		</choose>
+	</select>
+
+	<select id="selectByTabViewId" resultType="com.movit.rwe.modules.bi.base.entity.mysql.TabView">
+	  select
+		<include refid="tabViewColumns"/>
+	  from cb_tab_view a
+	  where a.id = #{tabViewId}
+	</select>
+</mapper>

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.movit.rwe.modules.bi.base.dao.mysql.EtlResultConfigDao">
+
+	<sql id="columns">
+		id,
+	    study_id as studyId,
+	    subject,
+	    key_name as keyName,
+	    key_depend as keyDepend,
+	    key_value as keyValue,
+	    description,
+	    create_by as createBy,
+	    create_on as createOn,
+	    modify_by as modifyBy,
+	    modify_on as modifyOn,
+	    version
+	</sql>
+
+	<select id="getMaxVersion" resultType="java.lang.Long">
+		select max(erc.version) from etl_result_config erc where erc.create_by = #{userId}
+	</select>
+
+	<select id="queryListEtlResultConfig" resultType="com.movit.rwe.modules.bi.base.entity.mysql.EtlResultConfig">
+	  select <include refid="columns"/> from etl_result_config where create_by = #{userId} order by create_on desc, study_id, subject
+	</select>
+
+	<select id="queryEtlResultConfig" resultType="com.movit.rwe.modules.bi.base.entity.mysql.EtlResultConfig">
+		select <include refid="columns"/> from etl_result_config where study_id = #{studyId} and key_name = #{indicator} limit 1
+	</select>
+
+	<delete id="removeConfigRow">
+	  delete from etl_result_config where id = #{id} and create_by = #{userId}
+	</delete>
+
+	<update id="updateConfigRow">
+	  update etl_result_config set
+		<foreach collection="dataMap" item="data" index="index" open="" separator="," close="">${index}=#{data}</foreach>
+	  where id = #{id} and create_by = #{userId}
+	</update>
+
+	<insert id="importConfig">
+	  insert into etl_result_config
+		<foreach collection="columnList" item="columnName" index="index" open="(" separator="," close=")">${columnName}</foreach>
+	  values
+		<foreach collection="dataList" item="columnData" index="index" open="(" separator="," close=")">#{columnData}</foreach>
+	</insert>
+
+</mapper>

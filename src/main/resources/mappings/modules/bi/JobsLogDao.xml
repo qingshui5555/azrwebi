@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.movit.rwe.modules.bi.base.dao.mysql.JobsLogDao">
+    
+	<sql id="jobsLogColumns">
+		a.ID_JOB as "idJob",
+		a.CHANNEL_ID as "channelId",
+		a.JOBNAME as "jobName",
+		a.STATUS as "status",
+		a.LINES_WRITTEN as "linesWritten",
+		a.ERRORS as "errors",
+		a.STARTDATE as "startDate",
+		a.ENDDATE as "endDate"
+	</sql>
+	
+    <sql id="jobsLogJoins">
+    </sql>
+    
+	<select id="get" resultType="com.movit.rwe.modules.bi.base.entity.mysql.JobsLog">
+		SELECT 
+			<include refid="jobsLogColumns"/>
+		FROM web_jobs_log a
+		WHERE a.ID_JOB = #{idJob} 
+	</select>
+	
+	<select id="findList" resultType="com.movit.rwe.modules.bi.base.entity.mysql.JobsLog">
+		SELECT 
+			<include refid="jobsLogColumns"/>
+		FROM web_jobs_log a
+		<include refid="jobsLogJoins"/>
+		WHERE 1=1
+		<if test="channelId != null and channelId != ''">
+			AND a.CHANNEL_ID = #{channelId}
+		</if>
+		<if test="jobName != null and jobName != ''">
+			AND a.JOBNAME LIKE concat('%',#{modelName},'%')
+		</if>
+		<if test="status != null and status != ''">
+			AND a.STATUS = #{status}
+		</if>
+		ORDER BY a.ID_JOB DESC
+	</select>
+	
+</mapper>

@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.movit.rwe.modules.bi.base.dao.mysql.PatientGroupDao">
+
+	<select id="findAll" resultType="com.movit.rwe.modules.bi.base.entity.mysql.PatientGroup">
+		SELECT 
+			id,
+			cohortName as 'groupName',
+			1 as 'groupType',
+			ifnull(patientCount,0) as 'patinetCount' 
+			FROM md_cohort 
+			where delflag=0
+			<if test="studyId!=null and studyId!= ''">
+			and studyId=#{studyId} 
+			</if>
+		union
+		SELECT  
+			id,
+			groupName as 'groupName',
+			0 as 'groupType',
+			ifnull(actualNum,0) as 'patinetCount'  
+			FROM md_group 
+			where delFlag=0
+			<if test="studyId!=null and studyId!= ''">
+			and studyId=#{studyId} 
+			</if>
+	</select>
+	
+	<select id="countPatientByGroups" resultType="java.lang.Integer">
+	SELECT 
+    COUNT(DISTINCT g.patientId)
+	FROM
+	    (
+	    SELECT 
+	        patientId
+	    FROM
+	        md_cohort_member
+	    WHERE
+	    <if test="cohorts!=null and cohorts.length>0">
+	    	cohortId IN 
+		    <foreach collection="cohorts" item="cohortId" open="(" close=")" separator=",">
+				#{cohortId}
+			</foreach>
+	    </if>
+	    <if test="cohorts==null or cohorts.length==0">
+	    	1=2
+	    </if>
+		UNION 
+	    SELECT 
+	        patientId
+	    FROM
+	        md_group_member
+	    WHERE
+	    <if test="groups!=null and groups.length>0">
+	        groupId IN 
+	   		<foreach collection="groups" item="groupId" open="(" close=")" separator=",">
+				#{groupId}
+			</foreach>
+	    </if>
+	    <if test="groups==null or groups.length==0">
+	        1=2
+	    </if>
+		) g
+	</select>
+	
+	<select id="getGroupName" resultType="string">
+	    select groupName from md_group where id=#{id}
+	</select>
+
+	<select id="loadByTypeAndId" resultType="com.movit.rwe.modules.bi.base.entity.mysql.PatientGroup">
+		<if test="type==1">
+		SELECT 
+			id,
+			cohortName as 'groupName',
+			1 as 'groupType',
+			ifnull(patientCount,0) as 'patinetCount' 
+			FROM md_cohort 
+			where delflag=0 and id=#{id}
+		</if>
+		<if test="type==0">
+		SELECT  
+		id,
+		groupName as 'groupName',
+		0 as 'groupType',
+		ifnull(actualNum,0) as 'patinetCount'  
+		FROM md_group 
+		where 
+		delFlag=0 and and id=#{id}
+		</if>
+	</select>
+
+</mapper>

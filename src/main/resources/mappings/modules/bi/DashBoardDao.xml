@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.movit.rwe.modules.bi.base.dao.mysql.DashBoardDao">
+    
+	<sql id="dashBoard_allColumns">
+		`cb_dashboard`.`id`,
+	    `cb_dashboard`.`name`,
+	    `cb_dashboard`.`title`,
+	    `cb_dashboard`.`studyId`,
+	    `cb_dashboard`.`remarks`,
+	    `cb_dashboard`.`createBy`,
+	    `cb_dashboard`.`createDate`,
+	    `cb_dashboard`.`updateBy`,
+	    `cb_dashboard`.`updateDate`,
+	    `cb_dashboard`.`delFlag`
+	</sql>
+    
+	<select id="get" resultType="com.movit.rwe.modules.bi.base.entity.mysql.DashBoard">
+		SELECT 
+			<include refid="dashBoard_allColumns"/>
+		FROM cb_dashboard 
+		WHERE cb_dashboard.id = #{id} and `cb_dashboard`.`delFlag` = 0
+	</select>
+	
+	<select id="findByStudyId" resultType="com.movit.rwe.modules.bi.base.entity.mysql.DashBoard">
+		SELECT 
+			<include refid="dashBoard_allColumns"/>
+		FROM cb_dashboard 
+		WHERE cb_dashboard.studyId = #{studyId} and `cb_dashboard`.`delFlag` = 0 limit 0,1
+	</select>
+	
+</mapper>

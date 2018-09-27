@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.movit.rwe.modules.bi.base.dao.mysql.TabIconDao">
+    
+	<sql id="tabIconColumns">
+		a.id,
+		a.name,
+		a.icon,
+		a.sort,
+		a.createBy,
+		a.createDate,
+		a.updateBy,
+		a.updateDate,
+		a.remarks,
+		a.delFlag
+	</sql>
+	
+	<sql id="tabIconJoins">
+    </sql>
+    
+	<select id="get" resultType="com.movit.rwe.modules.bi.base.entity.mysql.TabIcon">
+		SELECT 
+			<include refid="tabIconColumns"/>
+		FROM cb_tab_icon a
+		WHERE a.id = #{id} 
+		and a.delFlag = '0'
+	</select>
+	
+	<select id="findList" resultType="com.movit.rwe.modules.bi.base.entity.mysql.TabIcon">
+		SELECT 
+			<include refid="tabIconColumns"/>
+		FROM cb_tab_icon a
+		<include refid="tabIconJoins"/>
+		WHERE a.delFlag = #{DEL_FLAG_NORMAL} 
+		<if test="name != null and name != ''">
+			AND a.name = #{name}
+		</if>
+		<if test="icon != null and icon != ''">
+			AND a.icon = #{icon}
+		</if>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.sort ASC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="com.movit.rwe.modules.bi.base.entity.mysql.TabIcon">
+		SELECT
+			<include refid="tabIconColumns"/>
+		FROM cb_tab_icon a
+		<include refid="tabIconJoins"/>
+		WHERE a.delFlag = #{DEL_FLAG_NORMAL}
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.sort ASC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO cb_tab_icon(
+			id,
+			name,
+			icon,
+			sort,
+			createBy,
+			createDate,
+			updateBy,
+			updateDate,
+			remarks,
+			delFlag
+		) VALUES (
+			#{id}, 
+			#{name},  
+			#{icon}, 
+			#{sort}, 
+			#{createBy.id}, 
+			#{createDate}, 
+			#{updateBy.id}, 
+			#{updateDate}, 
+			#{remarks}, 
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE cb_tab_icon SET 
+			name = #{name},  
+			icon = #{icon}, 
+			sort = #{sort}, 
+			updateBy = #{updateBy.id}, 
+			updateDate = #{updateDate}, 
+			remarks = #{remarks}
+		WHERE id = #{id}
+	</update>
+	
+	<update id="delete">
+		UPDATE cb_tab_icon SET 
+			delFlag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id} 
+	</update>
+</mapper>

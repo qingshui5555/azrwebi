@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.movit.rwe.modules.bi.base.dao.mysql.OpenmrsUserDao">
+
+	<select id="getForcePassword" resultType="String">
+		select up.property_value
+		from users u
+		left join
+		(select * from user_property where property = "forcePassword") up on u.user_id=up.user_id
+		where u.username="${username}";
+	</select>
+
+</mapper>

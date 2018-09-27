@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.movit.rwe.modules.bi.base.dao.mysql.ChartDao">
+    
+	<sql id="chart_allColumns">
+		cb_chart.id,
+		cb_chart.`name`,
+		cb_chart.title,
+		cb_chart.content,
+		cb_chart.remarks,
+		cb_chart.createBy,
+		cb_chart.createDate,
+		cb_chart.updateBy,
+		cb_chart.updateDate,
+		cb_chart.delFlag
+	</sql>
+    
+	<select id="get" resultType="com.movit.rwe.modules.bi.base.entity.mysql.Chart">
+		SELECT 
+			<include refid="chart_allColumns"/>
+		FROM cb_chart 
+		WHERE cb_chart.id = #{id} and cb_chart.delFlag = 0
+	</select>
+	
+</mapper>

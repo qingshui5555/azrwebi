@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.movit.rwe.modules.bi.base.dao.mysql.ViewDao">
+
+	<sql id="view_allColumns">
+		cb_view.id,
+		cb_view.`name`,
+		cb_view.title,
+		cb_view.viewType,
+		cb_view.mappingUrl,
+		cb_view.remarks,
+		cb_view.createBy,
+		cb_view.createDate,
+		cb_view.updateBy,
+		cb_view.updateDate,
+		cb_view.delFlag,
+		cb_view.configFlag,
+		cb_view.configUrl
+	</sql>
+	
+	<sql id="db_view_allColumns">
+		cb_da_view.id,
+		cb_da_view.`name`,
+		cb_da_view.title,
+		cb_da_view.viewType,
+		"" as mappingUrl,
+		cb_da_view.remarks,
+		cb_da_view.createBy,
+		cb_da_view.createDate,
+		cb_da_view.updateBy,
+		cb_da_view.updateDate,
+		cb_da_view.delFlag,
+		false as configFlag,
+		"" as configUrl
+	</sql>
+
+	<select id="get" resultType="com.movit.rwe.modules.bi.base.entity.mysql.View">
+		SELECT
+		<include refid="view_allColumns" />
+		FROM cb_view
+		WHERE cb_view.delFlag = 0 and cb_view.id = #{id}
+	</select>
+
+	<update id="update">
+		UPDATE `cb_view`
+		SET
+		`name` = #{view.name},
+		`title` = #{view.title},
+		`viewType` = #{view.viewType},
+		`mappingUrl` = #{view.mappingUrl},
+		`remarks` = #{view.remarks},
+		`updateBy` = #{view.updateBy},
+		`updateDate` = now(),
+		`delFlag` = #{view.delFlag}
+		WHERE `id` = #{view.id}
+	</update>
+
+	<select id="findList" resultType="com.movit.rwe.modules.bi.base.entity.mysql.View">
+		SELECT
+		<include refid="view_allColumns" />
+		FROM cb_view
+		WHERE
+		cb_view.delFlag = 0
+		order by cb_view.createDate
+	</select>
+
+	<select id="findListByType" resultType="com.movit.rwe.modules.bi.base.entity.mysql.View">
+		SELECT
+		<include refid="view_allColumns" />
+		FROM cb_view
+		WHERE
+		cb_view.delFlag = 0
+		and
+		cb_view.viewType = #{viewType}
+		order by cb_view.createDate
+	</select>
+
+	<select id="findListByDashBoardId" resultType="com.movit.rwe.modules.bi.base.entity.mysql.View">
+		SELECT
+		<include refid="view_allColumns" />
+		FROM cb_dashboard_view
+		left join cb_view
+		on
+		cb_dashboard_view.viewId = cb_view.id
+		and
+		cb_view.delFlag=0
+		where
+		cb_dashboard_view.delFlag=0
+		and
+		cb_dashboard_view.dashBoardId=1
+		order by cb_dashboard_view.sort
+	</select>
+
+	<select id="findAllByTabId" resultType="com.movit.rwe.modules.bi.sys.vo.ViewVo">
+		select * from (
+		SELECT
+		<include refid="view_allColumns" />,
+		cb_tab_view.id as 'tabViewId',
+		cb_tab_view.alias as 'alias',
+		cb_tab_view.viewChartHeight,
+		cb_tab_view.size as 'size'
+		FROM cb_view
+		left join cb_tab_view
+		on
+		cb_view.id = cb_tab_view.viewId
+		where
+		cb_tab_view.tabId=#{tabId}
+		and
+		cb_view.delFlag=0
+		and
+		cb_tab_view.delFlag=0
+		order by cb_tab_view.sort
+		) as a
+		
+		union
+
+		select * from (
+		SELECT
+		<include refid="db_view_allColumns" />
+		,
+		cb_tab_view.id as 'tabViewId',
+		cb_tab_view.alias as 'alias',
+		cb_tab_view.viewChartHeight,
+		cb_tab_view.size as 'size'
+		FROM
+		cb_da_view
+		LEFT JOIN
+		cb_tab_view ON cb_da_view.id = cb_tab_view.viewId
+		WHERE
+		cb_tab_view.tabId=#{tabId}
+		and
+		cb_da_view.delFlag = 0
+		AND cb_tab_view.delFlag = 0
+		order by cb_tab_view.sort
+		) as b
+	</select>
+	
+	<select id="findShowAllViewVoByTabId" resultType="com.movit.rwe.modules.bi.dashboard.vo.StudyDashBoardTabViewVo">
+		select v.* from 
+		(
+			SELECT 
+			    tab.id AS 'tabId',
+			    vi.id AS 'viewId',
+			    IFNULL(tab.alias, vi.name) AS 'viewName',
+			    tab.viewType AS 'viewType',
+			    tab.sort AS 'sort',
+			    tab.size AS 'size',
+			    tab.alias AS 'alias'
+			FROM
+			    cb_tab_view tab
+			        LEFT JOIN
+			    cb_view vi ON tab.viewId = vi.id
+			WHERE
+			    tab.tabId = #{tabId}
+			        AND tab.delFlag = 0
+			        AND vi.delFlag = 0
+			union
+			SELECT 
+			    tab.id AS 'tabId',
+			    vi.id AS 'viewId',
+			    IFNULL(tab.alias, vi.title) AS 'viewName',
+			    tab.viewType AS 'viewType',
+			    tab.sort AS 'sort',
+			    tab.size AS 'size',
+			    tab.alias AS 'alias'
+			FROM
+			    cb_tab_view tab
+			        LEFT JOIN
+			    cb_da_view vi ON tab.viewId = vi.id
+			WHERE
+			    tab.tabId = #{tabId}
+			        AND tab.delFlag = 0
+			        AND vi.delFlag = 0
+		) v
+		order by v.sort
+	</select>
+</mapper>

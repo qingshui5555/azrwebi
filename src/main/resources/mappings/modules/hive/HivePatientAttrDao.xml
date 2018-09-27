@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.movit.rwe.modules.bi.base.dao.hive.HivePatientAttrDao">
+
+	<select id="queryListAll" resultType="com.movit.rwe.modules.bi.base.entity.hive.HivePatientAttr">
+	  select pa.guid, pa.study_id as studyId, pa.attr_name as attrName, pa.attr_value as attrValue, pa.create_by as createBy, pa.create_on as createOn
+	  from rwebox.patient_attr pa
+	  where 1=1
+		<if test="studyIds != null and studyIds.length > 0">
+			and pa.study_id in
+			<foreach collection="studyIds" item="studyId" open="(" close=")" separator=",">
+				#{studyId}
+			</foreach>
+		</if>
+	</select>
+</mapper>

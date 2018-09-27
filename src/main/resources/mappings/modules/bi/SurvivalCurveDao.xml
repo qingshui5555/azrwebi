@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.movit.rwe.modules.bi.base.dao.hive.SurvivalCurveDao">
+
+	<select id="get" resultType="java.util.Map">
+		select
+		s.patient_id,
+		max(ceil((datediff(ifnull(s.death_time,now()),s.diagnosis_time)+1)/365)) as survival
+		from survival s
+		left join patient_group_info p
+		on s.patient_id=p.patient_id
+		where
+		s.study_id=#{studyId} and
+		p.groupids like #{cohort}
+		group by s.patient_id
+	</select>
+
+	<select id="getPdSurvivalTime" resultType="java.util.Map">
+	SELECT
+		a.patient_id,
+		max(ceil((datediff(ifnull(a.death_time,now()),b.event_datetime)+1)/#{timeType})) as survival
+	FROM
+		survival a,
+		(
+			SELECT
+				study_id,
+				patient_id,
+				reference_code,
+				event_name,
+				event_type,
+				min(event_datetime) event_datetime,
+				assessment_response
+			FROM
+				patient_event
+			WHERE
+				event_type = 'Treat'
+			AND assessment_response = 'PD'
+			GROUP BY
+				study_id,
+				patient_id,
+				reference_code,
+				event_name,
+				event_type,
+				assessment_response
+		) b
+		left join patient_group_info p
+		on a.patient_id=p.patient_id
+	WHERE
+		a.patient_id = b.patient_id
+	AND a.study_id=#{studyId} 
+	AND p.groupids like #{cohort}
+		group by a.patient_id
+	</select>
+</mapper>

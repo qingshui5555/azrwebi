@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.movit.rwe.modules.bi.base.dao.mysql.BmdModelMetaDao">
+    
+	<sql id="bmdModelMetaColumns">
+		a.id,
+		a.modelName,
+  		a.querySql,
+  		a.sort,
+		a.createBy,
+		a.createDate,
+		a.updateBy,
+		a.updateDate,
+		a.remarks,
+		a.delFlag
+	</sql>
+	
+    <sql id="bmdModelMetaJoins">
+    </sql>
+    
+	<select id="get" resultType="com.movit.rwe.modules.bi.base.entity.mysql.BmdModelMeta">
+		SELECT 
+			<include refid="bmdModelMetaColumns"/>
+		FROM bmd_model_meta a
+		WHERE a.id = #{id} 
+		and a.delFlag = '0' 
+	</select>
+	
+	<select id="findList" resultType="com.movit.rwe.modules.bi.base.entity.mysql.BmdModelMeta">
+		SELECT 
+			<include refid="bmdModelMetaColumns"/>
+		FROM bmd_model_meta a
+		<include refid="bmdModelMetaJoins"/>
+		WHERE a.delFlag = #{DEL_FLAG_NORMAL} 
+		<if test="modelName != null and modelName != ''">
+			AND a.modelName LIKE 
+				<if test="dbName == 'oracle'">'%'||#{modelName}||'%'</if>
+				<if test="dbName == 'mssql'">'%'+#{modelName}+'%'</if>
+				<if test="dbName == 'mysql'">concat('%',#{modelName},'%')</if>
+		</if>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.sort ASC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="com.movit.rwe.modules.bi.base.entity.mysql.BmdModelMeta">
+		SELECT
+			<include refid="bmdModelMetaColumns"/>
+		FROM bmd_model_meta a
+		<include refid="bmdModelMetaJoins"/>
+		WHERE a.delFlag = #{DEL_FLAG_NORMAL}
+		<if test="studyId != null and studyId != ''">
+		AND a.studyId = #{studyId}
+		</if>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.sort ASC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO bmd_model_meta(
+			id,
+			modelName,
+	  		querySql,
+	  		sort,
+			createBy,
+			createDate,
+			updateBy,
+			updateDate,
+			remarks,
+			delFlag
+		) VALUES (
+			#{id}, 
+			#{modelName},  
+			#{querySql}, 
+			#{sort}, 
+			#{createBy.id}, 
+			#{createDate}, 
+			#{updateBy.id}, 
+			#{updateDate}, 
+			#{remarks}, 
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE bmd_model_meta SET 
+			modelName = #{modelName}, 
+			querySql = #{querySql},
+			sort = #{sort}, 
+			updateBy = #{updateBy.id}, 
+			updateDate = #{updateDate}, 
+			remarks = #{remarks}
+		WHERE id = #{id}
+	</update>
+	
+	<update id="delete">
+		UPDATE bmd_model_meta SET 
+			delFlag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id} 
+	</update>
+</mapper>

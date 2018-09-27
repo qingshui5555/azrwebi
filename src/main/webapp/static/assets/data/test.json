@@ -1,0 +1,29 @@
+{
+    "name": "Top Level",
+    "value": 10,
+	"level": "red",
+    "children": [
+      {
+        "name": "Level 2: A",
+        "value": 15,
+		"level": "blue",
+        "children": [
+          {
+            "name": "Son of A",
+            "value": 5,
+			"level": "green"
+          },
+          {
+            "name": "Daughter of A",
+            "value": 8,
+			"level": "green"
+          }
+        ]
+      },
+      {
+        "name": "Level 2: B",
+        "value": 10,
+		"level": "blue"
+      }
+    ]
+  }

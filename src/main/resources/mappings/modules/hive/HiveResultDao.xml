@@ -1,0 +1,829 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.movit.rwe.modules.bi.base.dao.hive.HiveResultDao">
+
+	<select id="queryListDemographicConfig" resultType="com.movit.rwe.modules.bi.base.entity.hive.HiveResult">
+		select distinct r.subject, r.study_id as studyId, r.key_name as keyName, r.description
+		from rwebox.result_demographic r
+		where r.study_id = #{studyId} and r.subject = #{subject}
+	</select>
+
+	<select id="queryListResultConfig" resultType="com.movit.rwe.modules.bi.base.entity.hive.HiveResult">
+		select distinct r.subject, r.study_id as studyId, r.key_name as keyName, null as key_value, r.description
+		from rwebox.result r
+		<if test="cohortIds != null and cohortIds.length > 0">
+			join rwebox.cohort_member cm on r.patient_id = cm.patient_id and cm.cohort_id in
+			<foreach collection="cohortIds" item="cohortId" open="(" close=")" separator=",">
+				#{cohortId}
+			</foreach>
+		</if>
+		where r.study_id = #{studyId} and r.subject = #{subject} and r.key_name not like '%Unit'
+		<if test="withUnit != null and withUnit = true">
+			union all
+			select distinct r.subject, r.study_id as studyId, r.key_name as keyName, r.key_value as keyValue, r.description
+			from rwebox.result r
+			where r.study_id = #{studyId} and r.subject = #{subject} and r.key_name like '%Unit'
+		</if>
+	</select>
+
+	<select id="queryListBiomarkerTestConfig" resultType="java.util.Map" >
+		select distinct 'Mutation' as measure, trim(concat(c.biomarker, ' ', c.site, ' ', c.exon, ' ', c.changeType)) as gene from (
+			select r.subject, r.study_id, r.patient_id, r.visit_id, r.visit_on, r.group_id,
+				max(case r.key_name when 'Mutation Biomarker' then r.key_value else '' end ) as biomarker,
+				max(case r.key_name when 'Mutation Site' then r.key_value else '' end ) as site,
+				max(case r.key_name when 'Mutation Exon' then r.key_value else '' end ) as exon,
+				max(case r.key_name when 'Mutation Change Type' then r.key_value else '' end ) as changeType
+			from rwebox.result r
+			where r.study_id = #{studyId} and r.subject = #{subject}
+			group by r.subject, r.study_id, r.patient_id, r.visit_id, r.visit_on, r.group_id
+		) c where c.biomarker != ''
+		union all
+		select distinct 'Expression' as measure, c.biomarker as gene from (
+			select r.subject, r.study_id, r.patient_id, r.visit_id, r.visit_on, r.group_id,
+				max(case r.key_name when 'Expression Biomarker' then r.key_value else '' end ) as biomarker
+			from rwebox.result r
+			where r.study_id = #{studyId} and r.subject = #{subject}
+			group by r.subject, r.study_id, r.patient_id, r.visit_id, r.visit_on, r.group_id
+		) c where c.biomarker != ''
+		union all
+		select distinct 'Copy' as measure, c.biomarker as gene from (
+			select r.subject, r.study_id, r.patient_id, r.visit_id, r.visit_on, r.group_id,
+				max(case r.key_name when 'Copy Biomarker' then r.key_value else '' end ) as biomarker
+			from rwebox.result r
+			where r.study_id = #{studyId} and r.subject = #{subject}
+			group by r.subject, r.study_id, r.patient_id, r.visit_id, r.visit_on, r.group_id
+		) c where c.biomarker != ''
+	</select>
+
+	<select id="queryListDemographicCountData" resultType="com.movit.rwe.modules.bi.base.entity.vo.HiveResultVo">
+		select r.key_name as keyName, r.key_value as keyValue, count(distinct r.patient_id) as patientCount
+		from rwebox.result_demographic r
+		<if test="cohortIds != null and cohortIds.length > 0">
+			join rwebox.cohort_member cm on r.patient_id = cm.patient_id and cm.cohort_id in
+			<foreach collection="cohortIds" item="cohortId" open="(" close=")" separator=",">
+				#{cohortId}
+			</foreach>
+		</if>
+		where r.study_id = #{studyId} and r.subject = #{subject}
+		<if test="startDate != null and startDate != ''">
+			<![CDATA[ and r.create_on >= #{startDate} ]]>
+		</if>
+		<if test="endDate != null and endDate != ''">
+			<![CDATA[ and r.create_on <= #{endDate} ]]>
+		</if>
+		<if test="indicators != null and indicators.length > 0">
+			and r.key_name in
+			<foreach collection="indicators" item="indicator" open="(" close=")" separator=",">
+				#{indicator}
+			</foreach>
+		</if>
+		group by r.key_name, r.key_value
+		order by r.key_name, r.key_value
+	</select>
+
+	<select id="queryListGroupCountData" parameterType="java.util.Map" resultType="java.util.Map">
+		select
+		<foreach item="value" index="key" collection="groups" separator="," >
+			<choose>
+				<when test="key == 'less'">
+					sum(<![CDATA[ case when c.age < cast(#{value} as double) then 1 else 0 end ]]>) as #{key}
+				</when>
+				<when test="key == 'more'">
+					sum(<![CDATA[ case when c.age >= cast(#{value} as double) then 1 else 0 end ]]>) as #{key}
+				</when>
+				<otherwise>
+					sum(<![CDATA[ case when c.age >= cast(#{key} as double) and c.age < cast(#{value} as double) then 1 else 0 end ]]>) as #{key}
+				</otherwise>
+			</choose>
+		</foreach>
+		from (
+			select rd.patient_id, floor(datediff(rd.create_on, cast(rd.key_value as timestamp))/365) as age
+			from rwebox.result_demographic rd
+			<if test="cohortIds != null and cohortIds.length > 0">
+				join rwebox.cohort_member cm on rd.patient_id = cm.patient_id and cm.cohort_id in
+				<foreach collection="cohortIds" item="cohortId" open="(" close=")" separator=",">
+					#{cohortId}
+				</foreach>
+			</if>
+			where rd.study_id = #{studyId} and rd.subject = #{subject} and rd.key_name = #{indicator}) c
+	</select>
+
+	<select id="queryListVitalGroupCountData" resultType="java.util.HashMap">
+		select
+		<foreach item="value" index="key" collection="groups" separator="," >
+			<choose>
+				<when test="key == 'less'">
+					sum(<![CDATA[ case when c.rValue < cast(#{value} as double) then 1 else 0 end ]]>) as #{key}
+				</when>
+				<when test="key == 'more'">
+					 sum(<![CDATA[case when c.rValue > cast(#{value} as double) then 1 else 0 end ]]>) as #{key}
+				</when>
+				<otherwise>
+					 sum(<![CDATA[case when c.rValue >= cast(translate(#{key}, '!', '.') as double)
+					 and c.rValue < cast(#{value} as double) then 1 else 0 end ]]>) as #{key}
+				</otherwise>
+			</choose>
+		</foreach>
+		from (
+			select distinct r1.study_id, r1.subject, r1.key_name, r1.patient_id, r3.key_value as unit,
+				case when r3.key_value = rc.source_unit or r3.key_value is null then cast(r1.key_value as double)
+				else cast(r1.key_value as double)/cast(rc.factor as double) end as rValue
+			from rwebox.result r1
+			<if test="cohortIds != null and cohortIds.length > 0">
+				join rwebox.cohort_member cm on r1.patient_id = cm.patient_id and cm.cohort_id in
+				<foreach collection="cohortIds" item="cohortId" open="(" close=")" separator=",">
+					#{cohortId}
+				</foreach>
+			</if>
+			join (select study_id, subject, patient_id, max(visit_id) as visit_id from rwebox.result
+				where study_id = #{studyId} and subject = #{subject} group by study_id, subject, patient_id) r2
+				on r1.study_id = r2.study_id and r1.subject = r2.subject and r1.patient_id = r2.patient_id
+				and r1.visit_id = r2.visit_id and r1.key_name = #{indicator}
+			left join rwebox.result r3 on r1.study_id = r3.study_id and r1.subject = r3.subject
+				 and r1.patient_id = r3.patient_id and r1.visit_id = r3.visit_id and r3.key_name = concat(#{indicator},' Unit')
+			left join rwebox.result_config rc on r1.study_id = rc.study_id and r1.subject = rc.subject
+				 and r1.key_name = rc.indicator and (r3.key_value = rc.source_unit or r3.key_value = rc.target_unit)
+		) c
+	</select>
+
+	<select id="queryListDemographicMatchData" resultType="java.lang.String">
+		select r.key_value from rwebox.result_demographic r
+		where r.study_id = #{studyId} and r.subject = #{subject} and r.key_name = #{indicator}
+		and r.key_value like concat(#{searchText},'%')
+	</select>
+
+	<select id="queryListResultData" resultType="com.movit.rwe.modules.bi.base.entity.hive.HiveResult">
+		select distinct m.guid, m.subject, m.study_id as studyId, m.visit_id as visitId, m.visit_on as visitOn,
+		m.patient_id as patientId, m.group_id as groupId, m.key_name as keyName, m.key_value as keyValue,
+		<if test="indicatorUnits != null and indicatorUnits.length > 0">
+			n.key_value as keyUnit,
+		</if>
+		m.description, m.create_on as createOn, m.create_by as createBy, cast(m.modify_on as timestamp) as modifyOn,
+		m.modify_by as modifyBy, m.version
+		from ( select r.* from rwebox.result r where r.study_id = #{studyId} and r.subject = #{subject}
+		<if test="startDate != null and startDate != ''">
+			<![CDATA[ and r.visit_on >= #{startDate} ]]>
+		</if>
+		<if test="endDate != null and endDate != ''">
+			<![CDATA[ and r.visit_on <= #{endDate} ]]>
+		</if>
+		<if test="indicators != null and indicators.length > 0">
+			and r.key_name in
+			<foreach collection="indicators" item="indicator" open="(" close=")" separator=",">
+				#{indicator}
+			</foreach>
+		</if>
+		) m
+		<if test="indicatorUnits != null and indicatorUnits.length > 0">
+			left join ( select r.* from rwebox.result r where r.study_id = #{studyId} and r.subject = #{subject}
+			and r.key_name in
+			<foreach collection="indicatorUnits" item="indicatorUnit" open="(" close=")" separator=",">
+				#{indicatorUnit}
+			</foreach>
+			) n on m.visit_id = n.visit_id
+		</if>
+		<if test="cohortIds != null and cohortIds.length > 0">
+			join rwebox.cohort_member cm on m.patient_id = cm.patient_id where cm.cohort_id in
+			<foreach collection="cohortIds" item="cohortId" open="(" close=")" separator=",">
+				#{cohortId}
+			</foreach>
+		</if>
+	</select>
+
+	<select id="queryListVitalAttrData" resultType="com.movit.rwe.modules.bi.base.entity.vo.HiveResultVo">
+		select a.subject, a.study_id, a.key_name as keyName, a.key_value as keyValue, count(distinct a.patient_id) as patientCount
+		from (select patient_id, max(visit_on) visit_on from rwebox.result group by patient_id) b
+		 join rwebox.result a on a.patient_id = b.patient_id and a.visit_on = b.visit_on
+		<if test="cohortIds != null and cohortIds.length > 0">
+			join rwebox.cohort_member cm on b.patient_id = cm.patient_id and cm.cohort_id in
+			<foreach collection="cohortIds" item="cohortId" open="(" close=")" separator=",">
+				#{cohortId}
+			</foreach>
+		</if>
+		where a.study_id = #{studyId} and a.subject = #{subject} and a.key_value != ''
+		<if test="startDate != null and startDate != ''">
+			<![CDATA[ and a.visit_on >= #{startDate} ]]>
+		</if>
+		<if test="endDate != null and endDate != ''">
+			<![CDATA[ and a.visit_on <= #{endDate} ]]>
+		</if>
+		<if test="indicators != null and indicators.length > 0">
+			and a.key_name in
+			<foreach collection="indicators" item="indicator" open="(" close=")" separator=",">
+				#{indicator}
+			</foreach>
+		</if>
+		group by a.subject, a.study_id, a.key_name, a.key_value
+		order by a.subject, a.study_id, a.key_name, a.key_value
+	</select>
+
+	<select id="queryListVitalStageData" resultType="com.movit.rwe.modules.bi.base.entity.vo.HiveResultVo">
+-- 		select r1.key_value as keyName, (case when r3.key_value is null then r4.key_value else r3.key_value end) as keyValue, count(distinct r1.patient_id) as patientCount
+		select r1.key_value as keyName, r3.key_value as keyValue, count(distinct r1.patient_id) as patientCount
+		from rwebox.result r1
+		<if test="cohortIds != null and cohortIds.length > 0">
+			join rwebox.cohort_member cm on r1.patient_id = cm.patient_id and cm.cohort_id in
+			<foreach collection="cohortIds" item="cohortId" open="(" close=")" separator=",">
+				#{cohortId}
+			</foreach>
+		</if>
+		join (select study_id, subject, patient_id, max(visit_id) as visit_id from rwebox.result
+	  		where study_id = #{studyId} and subject = #{subject} group by study_id, subject, patient_id) r2 on
+			r1.study_id = r2.study_id and r1.subject = r2.subject and r1.patient_id = r2.patient_id and r1.visit_id = r2.visit_id
+		left join rwebox.result r3 on r1.study_id = r3.study_id and r1.subject = r3.subject and r1.patient_id = r3.patient_id and r1.visit_id = r3.visit_id and r3.key_name = 'Stage Value'
+-- 		left join rwebox.result r4 on r1.study_id = r4.study_id and r1.subject = r4.subject and r1.patient_id = r4.patient_id and r1.visit_id = r4.visit_id and r4.key_name = 'Stage Value2'
+		where r1.key_name = 'Stage'
+		<if test="indicators != null and indicators.length > 0">
+			and r1.key_value in
+			<foreach collection="indicators" item="indicator" open="(" close=")" separator=",">
+				#{indicator}
+			</foreach>
+		</if>
+		<if test="startDate != null and startDate != ''">
+			<![CDATA[ and r1.visit_on >= #{startDate} ]]>
+		</if>
+		<if test="endDate != null and endDate != ''">
+			<![CDATA[ and r1.visit_on <= #{endDate} ]]>
+		</if>
+		group by keyName, keyValue
+		order by keyName, keyValue
+	</select>
+
+	<select id="queryListLabTestData" resultType="com.movit.rwe.modules.bi.base.entity.vo.HiveResultVo">
+		select distinct m.guid, m.subject, m.study_id as studyId, m.visit_id as visitId, m.visit_on as visitOn, m.patient_id as patientId, m.group_id as groupId,
+		m.key_name as keyName, m.key_value as keyValue, rd.key_value as referenceCode,
+		<if test="indicatorUnit != null and indicatorUnit != ''">
+			n.key_value as keyUnit,
+		</if>
+		m.description, m.create_on as createOn, m.create_by as createBy, cast(m.modify_on as timestamp) as modifyOn, m.modify_by as modifyBy, m.version
+		from ( select r.* from rwebox.result r where r.study_id = #{studyId} and r.subject = #{subject}
+		<if test="startDate != null and startDate != ''">
+			<![CDATA[ and r.visit_on >= #{startDate} ]]>
+		</if>
+		<if test="endDate != null and endDate != ''">
+			<![CDATA[ and r.visit_on <= #{endDate} ]]>
+		</if>
+		<if test="indicator != null and indicator != ''">
+			and r.key_name = #{indicator}
+		</if>
+		) m
+		left join rwebox.result_demographic rd on m.study_id = rd.study_id and m.patient_id = rd.patient_id and rd.key_name = 'Reference Code'
+		<if test="indicatorUnit != null and indicatorUnit != ''">
+			left join ( select r.* from rwebox.result r where r.study_id = #{studyId} and r.subject = #{subject} and r.key_name = #{indicatorUnit}
+			) n on m.visit_id = n.visit_id
+		</if>
+		<if test="cohortIds != null and cohortIds.length > 0">
+			join rwebox.cohort_member cm on m.patient_id = cm.patient_id where cm.cohort_id in
+			<foreach collection="cohortIds" item="cohortId" open="(" close=")" separator=",">
+				#{cohortId}
+			</foreach>
+		</if>
+	</select>
+
+	<select id="queryListLabTestTableData" resultType="com.movit.rwe.modules.bi.base.entity.vo.HiveLabTestCountVo">
+        select p.type, p.indicator, p.description, p.unit, count(distinct p.patient_id) as pCount, max(p.rMax) as rMax, min(p.rMin) as rMin,
+        sum(p.rSum) as rSum, sum(p.vCount) as vCount,
+        sum(case when p.nCount > 0 then 1 else 0 end) as nCount, min(p.vCount) as vMin, max(p.vCount) as vMax
+        from (select v.type, v.indicator, v.description, v.unit, v.patient_id, max(v.rValue) as rMax, min(v.rValue) as rMin, sum(v.rValue) as rSum,
+            sum(case when v.visit_id is not null then 1 else 0 end) as vCount,
+            sum(case when v.rValue between v.lower_ref and v.upper_ref then 1 else 0 end) as nCount
+          from (select r3.type, m.key_name as indicator, m.description, case when n.key_value=r3.source_unit then n.key_value else r3.source_unit end as unit, m.patient_id, m.visit_id,
+              case when n.key_value = r3.source_unit then cast(m.key_value as double) else cast(m.key_value as double)/cast(r3.factor as double) end as rValue,
+              cast(r3.lower_ref as double) as lower_ref, cast(r3.upper_ref as double) as upper_ref
+            from (
+              select r1.subject, r1.study_id, r1.key_name, r1.description, r1.patient_id, r1.visit_id, r1.key_value
+              from rwebox.result r1
+			  <if test="cohortIds != null and cohortIds.length > 0">
+					join rwebox.cohort_member cm on cm.patient_id = r1.patient_id and cm.cohort_id in
+					<foreach collection="cohortIds" item="cohortId" open="(" close=")" separator=",">
+						#{cohortId}
+					</foreach>
+				</if>
+			  where r1.study_id = #{studyId} and r1.subject = #{subject}
+              <if test="indicators != null and indicators.length > 0">
+                and r1.key_name in
+                <foreach collection="indicators" item="indicator" open="(" close=")" separator=",">
+                  #{indicator}
+                </foreach>
+              </if>) m
+              left join (select r2.key_name, r2.patient_id, r2.visit_id, r2.key_value
+              from rwebox.result r2 where r2.study_id = #{studyId} and r2.subject = #{subject}
+              <if test="indicatorUnits != null and indicatorUnits.length > 0">
+                and r2.key_name in
+                <foreach collection="indicatorUnits" item="indicatorUnit" open="(" close=")" separator=",">
+                  #{indicatorUnit}
+                </foreach>
+              </if>) n on m.visit_id = n.visit_id and concat(m.key_name, ' Unit') = n.key_name
+              left join rwebox.result_config r3 on m.key_name = r3.indicator and r3.subject = m.subject and r3.study_id = m.study_id and (n.key_value = r3.source_unit or n.key_value = r3.target_unit)
+            where n.key_value != '' ) v
+          group by v.type, v.indicator, v.description, v.unit, v.patient_id) p
+        group by p.type, p.indicator, p.description, p.unit
+	</select>
+
+	<select id="queryListComorbidityCountData" resultType="com.movit.rwe.modules.bi.base.entity.vo.HiveResultVo">
+		select c1.keyName, c1.keyValue, count(distinct c1.patientId) as patientCount
+		from (
+			select r.patient_id as patientId, r.key_name as keyName,
+			case when r.key_value = 'YES' then '' else r.key_value end as keyValue
+			from rwebox.result r
+			<if test="cohortIds != null and cohortIds.length > 0">
+				join rwebox.cohort_member cm on r.patient_id = cm.patient_id and cm.cohort_id in
+				<foreach collection="cohortIds" item="cohortId" open="(" close=")" separator=",">
+					#{cohortId}
+				</foreach>
+			</if>
+			where r.study_id = #{studyId} and r.subject = #{subject} and r.key_name != 'Diagnosis Name'
+			<if test="startDate != null and startDate != ''">
+				<![CDATA[ and r.visit_on >= #{startDate} ]]>
+			</if>
+			<if test="endDate != null and endDate != ''">
+				<![CDATA[ and r.visit_on <= #{endDate} ]]>
+			</if>
+			union all
+			select r.patient_id as patientId, c.map_key as keyName, c.map_value as keyValue
+			from rwebox.result r left join rwebox.comorbidity_map c on r.study_id = c.study_id and r.subject = r.subject and r.key_value = c.key
+			<if test="cohortIds != null and cohortIds.length > 0">
+				join rwebox.cohort_member cm on r.patient_id = cm.patient_id and cm.cohort_id in
+				<foreach collection="cohortIds" item="cohortId" open="(" close=")" separator=",">
+					#{cohortId}
+				</foreach>
+			</if>
+			where r.study_id = #{studyId} and r.subject = #{subject} and r.key_name = 'Diagnosis Name'
+			<if test="startDate != null and startDate != ''">
+				<![CDATA[ and r.visit_on >= #{startDate} ]]>
+			</if>
+			<if test="endDate != null and endDate != ''">
+				<![CDATA[ and r.visit_on <= #{endDate} ]]>
+			</if>
+		) c1 group by keyName, keyValue
+		union all
+		select c2.keyName, 'Patient Count' as keyValue, count(distinct c2.patientId) as patientCount
+		from (
+			select r.patient_id as patientId, r.key_name as keyName, case when r.key_value = 'YES' then '' else r.key_value end as keyValue
+			from rwebox.result r
+			<if test="cohortIds != null and cohortIds.length > 0">
+				join rwebox.cohort_member cm on r.patient_id = cm.patient_id and cm.cohort_id in
+				<foreach collection="cohortIds" item="cohortId" open="(" close=")" separator=",">
+					#{cohortId}
+				</foreach>
+			</if>
+			where r.study_id = #{studyId} and r.subject = #{subject} and r.key_name != 'Diagnosis Name'
+			<if test="startDate != null and startDate != ''">
+				<![CDATA[ and r.visit_on >= #{startDate} ]]>
+			</if>
+			<if test="endDate != null and endDate != ''">
+				<![CDATA[ and r.visit_on <= #{endDate} ]]>
+			</if>
+			union all
+			select r.patient_id as patientId, c.map_key as keyName, c.map_value as keyValue
+			from rwebox.result r left join rwebox.comorbidity_map c on r.study_id = c.study_id and r.subject = r.subject and r.key_value = c.key
+			<if test="cohortIds != null and cohortIds.length > 0">
+				join rwebox.cohort_member cm on r.patient_id = cm.patient_id and cm.cohort_id in
+				<foreach collection="cohortIds" item="cohortId" open="(" close=")" separator=",">
+					#{cohortId}
+				</foreach>
+			</if>
+			where r.study_id = #{studyId} and r.subject = #{subject} and r.key_name = 'Diagnosis Name'
+			<if test="startDate != null and startDate != ''">
+				<![CDATA[ and r.visit_on >= #{startDate} ]]>
+			</if>
+			<if test="endDate != null and endDate != ''">
+				<![CDATA[ and r.visit_on <= #{endDate} ]]>
+			</if>
+		) c2 group by keyName
+		union all
+		select 'Comorbidity' as keyName, 'Patient Count' as keyValue, count(distinct c3.patientId) as patientCount
+		from (
+			select r.patient_id as patientId, r.key_name as keyName, case when r.key_value = 'YES' then ''
+			else r.key_value end as keyValue
+			from rwebox.result r
+			<if test="cohortIds != null and cohortIds.length > 0">
+				join rwebox.cohort_member cm on r.patient_id = cm.patient_id and cm.cohort_id in
+				<foreach collection="cohortIds" item="cohortId" open="(" close=")" separator=",">
+					#{cohortId}
+				</foreach>
+			</if>
+			where r.study_id = #{studyId} and r.subject = #{subject} and r.key_name != 'Diagnosis Name'
+			<if test="startDate != null and startDate != ''">
+				<![CDATA[ and r.visit_on >= #{startDate} ]]>
+			</if>
+			<if test="endDate != null and endDate != ''">
+				<![CDATA[ and r.visit_on <= #{endDate} ]]>
+			</if>
+			union all
+			select r.patient_id as patientId, c.map_key as keyName, c.map_value as keyValue
+			from rwebox.result r left join rwebox.comorbidity_map c on r.study_id = c.study_id and r.subject = r.subject and r.key_value = c.key
+			<if test="cohortIds != null and cohortIds.length > 0">
+				join rwebox.cohort_member cm on r.patient_id = cm.patient_id and cm.cohort_id in
+				<foreach collection="cohortIds" item="cohortId" open="(" close=")" separator=",">
+					#{cohortId}
+				</foreach>
+			</if>
+			where r.study_id = #{studyId} and r.subject = #{subject} and r.key_name = 'Diagnosis Name'
+			<if test="startDate != null and startDate != ''">
+				<![CDATA[ and r.visit_on >= #{startDate} ]]>
+			</if>
+			<if test="endDate != null and endDate != ''">
+				<![CDATA[ and r.visit_on <= #{endDate} ]]>
+			</if>
+		) c3
+	</select>
+
+	<select id="queryListAllTreatmentCountData" resultType="com.movit.rwe.modules.bi.base.entity.vo.HiveTreatmentCountVo">
+		select c.lineStr, c.drugName, count(distinct c.patient_id) as patientCount,
+		sum(datediff(c.endDate, c.startDate)) as timesDay, group_concat(distinct c.patient_id) as patientIdStr
+		from (select r.subject, r.study_id, r.patient_id, r.visit_id, r.visit_on, r.group_id,
+			max(case r.key_name when 'Line Of Treatment' then r.key_value else '' end ) as lineStr,
+			max(case r.key_name when 'Therapy Type' then r.key_value else '' end ) as therapyType,
+			max(case r.key_name when 'Product' then r.key_value else '' end ) as drugName,
+			max(case r.key_name when 'Start Date' then r.key_value else '' end ) as startDate,
+			max(case r.key_name when 'End Date' then r.key_value else '' end ) as endDate
+			from rwebox.result r
+			<if test="cohortIds != null and cohortIds.length > 0">
+				join rwebox.cohort_member cm on cm.patient_id = r.patient_id and cm.cohort_id in
+				<foreach collection="cohortIds" item="cohortId" open="(" close=")" separator=",">
+					#{cohortId}
+				</foreach>
+			</if>
+			where r.study_id = #{studyId} and r.subject = #{subject}
+			group by r.subject, r.study_id, r.patient_id, r.visit_id, r.visit_on, r.group_id) c
+		where c.drugName != '' and c.startDate != '' and c.lineStr in ('First line', 'Second line', 'Third line', '>Third Line')
+		<if test="types != null and types.length > 0">
+			and c.therapyType in
+			<foreach collection="types" item="type" open="(" close=")" separator=",">
+				#{type}
+			</foreach>
+		</if>
+		group by c.lineStr, c.drugName
+	</select>
+
+	<select id="queryListFirstLevelTreatmentJourney" resultType="com.movit.rwe.modules.bi.base.entity.vo.HiveTreatmentCountVo">
+		select c.lineStr, c.drugName, count(distinct c.patient_id) as patientCount,
+		sum(datediff(c.endDate, c.startDate)) as timesDay, group_concat(distinct c.patient_id) as patientIdStr
+		from (select r.subject, r.study_id, r.patient_id, r.visit_id, r.visit_on, r.group_id,
+			max(case r.key_name when 'Line Of Treatment' then r.key_value else '' end ) as lineStr,
+			max(case r.key_name when 'Therapy Type' then r.key_value else '' end ) as therapyType,
+			max(case r.key_name when 'Product' then r.key_value else '' end ) as drugName,
+			max(case r.key_name when 'Start Date' then r.key_value else '' end ) as startDate,
+			max(case r.key_name when 'End Date' then r.key_value else '' end ) as endDate
+			from rwebox.result r
+			<if test="cohortIds != null and cohortIds.length > 0">
+				join rwebox.cohort_member cm on cm.patient_id = r.patient_id and cm.cohort_id in
+				<foreach collection="cohortIds" item="cohortId" open="(" close=")" separator=",">
+					#{cohortId}
+				</foreach>
+			</if>
+			where r.study_id = #{studyId} and r.subject = #{subject}
+			group by r.subject, r.study_id, r.patient_id, r.visit_id, r.visit_on, r.group_id) c
+		where c.drugName != '' and c.startDate != '' and (c.lineStr = #{firstLine} or c.lineStr = #{secondLine})
+		<if test="types != null and types.length > 0">
+			and c.therapyType in
+			<foreach collection="types" item="type" open="(" close=")" separator=",">
+				#{type}
+			</foreach>
+		</if>
+		group by c.lineStr, c.drugName
+	</select>
+
+	<select id="queryListTreatmentChildCountData" resultType="com.movit.rwe.modules.bi.base.entity.vo.HiveTreatmentCountVo">
+		select c.lineStr, c.drugName, count(distinct c.patient_id) as patientCount,
+		sum(datediff(c.endDate, c.startDate)) as timesDay, group_concat(distinct c.patient_id) as patientIdStr
+		from (select r.subject, r.study_id, r.patient_id, r.visit_id, r.visit_on, r.group_id,
+			max(case r.key_name when 'Line Of Treatment' then r.key_value else '' end ) as lineStr,
+			max(case r.key_name when 'Therapy Type' then r.key_value else '' end ) as therapyType,
+			max(case r.key_name when 'Product' then r.key_value else '' end ) as drugName,
+			max(case r.key_name when 'Start Date' then r.key_value else '' end ) as startDate,
+			max(case r.key_name when 'End Date' then r.key_value else '' end ) as endDate
+			from rwebox.result r
+			<if test="cohortIds != null and cohortIds.length > 0">
+				join rwebox.cohort_member cm on cm.patient_id = r.patient_id and cm.cohort_id in
+				<foreach collection="cohortIds" item="cohortId" open="(" close=")" separator=",">
+					#{cohortId}
+				</foreach>
+			</if>
+			where r.study_id = #{studyId} and r.subject = #{subject}
+			group by r.subject, r.study_id, r.patient_id, r.visit_id, r.visit_on, r.group_id) c
+		where c.drugName != '' and c.startDate != ''
+		and (c.lineStr = #{firstLine} or c.lineStr = #{secondLine}) and locate(c.patient_id, #{patientIdStr}) > 0
+		<if test="types != null and types.length > 0">
+			and c.therapyType in
+			<foreach collection="types" item="type" open="(" close=")" separator=",">
+				#{type}
+			</foreach>
+		</if>
+		group by c.lineStr, c.drugName
+	</select>
+
+	<select id="queryListTreatmentByPatient" resultType="com.movit.rwe.modules.bi.base.entity.vo.HiveTreatmentVo">
+		select c.studyId, c.patientId, c.visitId, c.visitOn, c.lineStr, c.therapyType,
+		c.drugName, cast(c.startDate as timestamp) as startDate,
+		cast(c.endDate as timestamp) as endDate, cast(c.dailyDose as double) as dailyDose, c.frequency, c.cycle
+		from (select r.study_id as studyId, r.patient_id as patientId, r.visit_id as visitId, r.visit_on as visitOn,
+			max(case r.key_name when 'Line Of Treatment' then r.key_value else '' end ) as lineStr,
+			max(case r.key_name when 'Therapy Type' then r.key_value else '' end ) as therapyType,
+			max(case r.key_name when 'Product' then r.key_value else '' end ) as drugName,
+			max(case r.key_name when 'Start Date' then r.key_value else '' end ) as startDate,
+			max(case r.key_name when 'End Date' then r.key_value else '' end ) as endDate,
+			max(case r.key_name when 'Daily Dose' then r.key_value else '' end ) as dailyDose,
+			max(case r.key_name when 'Frequency' then r.key_value else '' end ) as frequency,
+			max(case r.key_name when 'Cycle' then r.key_value else '' end ) as cycle
+			from rwebox.result r left join rwebox.result_demographic rd on r.study_id = rd.study_id
+			and r.patient_id = rd.patient_id
+			where r.study_id = #{studyId} and r.subject = #{subject} and rd.key_name = #{demographicName}
+			and rd.key_value = #{demographicValue}
+			group by r.study_id, r.patient_id, r.visit_id, r.visit_on, r.group_id) c
+		where c.therapyType != '' and c.drugName != '' and c.startDate != ''
+		and c.lineStr in ('First line', 'Second line', 'Third line', '>Third Line')
+	</select>
+
+	<select id="queryListDetailPayerCost" resultType="java.util.Map" >
+		select rc.type as item, '' as unit,  sum(cast(r.key_value as double)) as amount, count(r.visit_id) as vcount
+		from rwebox.result r left join rwebox.result_config rc on r.subject = rc.subject and r.key_name = rc.indicator
+		<if test="cohortIds != null and cohortIds.length > 0">
+			join rwebox.cohort_member cm on cm.patient_id = r.patient_id and cm.cohort_id in
+			<foreach collection="cohortIds" item="cohortId" open="(" close=")" separator=",">
+				#{cohortId}
+			</foreach>
+		</if>
+		where r.study_id = #{studyId} and r.subject = #{subject} and rc.type != ''
+		<if test="startDate != null and startDate != ''">
+			<![CDATA[ and r.visit_on >= #{startDate} ]]>
+		</if>
+		<if test="endDate != null and endDate != ''">
+			<![CDATA[ and r.visit_on <= #{endDate} ]]>
+		</if>
+		group by rc.type, unit
+	</select>
+
+	<select id="queryListTotalPayerCost" resultType="java.util.Map" >
+		select '' as unit, sum(cast(c.selfPaid as double))/10 as selfPaid, sum(cast(c.individualSelfPaid as double))/10 as individualSelfPaid,
+			sum(cast(c.otherPaid as double))/10 as otherPaid, count(c.visit_id) as vcount
+		from (select r.visit_id, max(case r.key_name when 'Self Account Paid Cost' then r.key_value else '' end ) as selfPaid,
+				max(case r.key_name when 'Self Paid Cost' then r.key_value else '' end ) as individualSelfPaid,
+				max(case r.key_name when 'Other Paid Cost' then r.key_value else '' end ) as otherPaid
+			from rwebox.result r
+			where r.study_id = #{studyId} and r.subject = #{subject} and r.key_name in ('Self Account Paid Cost', 'Self Paid Cost', 'Other Paid Cost')
+			<if test="startDate != null and startDate != ''">
+				<![CDATA[ and r.visit_on >= #{startDate} ]]>
+			</if>
+			<if test="endDate != null and endDate != ''">
+				<![CDATA[ and r.visit_on <= #{endDate} ]]>
+			</if>
+			group by r.study_id, r.subject, r.patient_id, r.visit_id) c
+		group by unit
+	</select>
+
+	<select id="queryListWorldMap" resultType="java.util.Map" >
+		select rd.key_value as name, ifnull(case when n.key_value=r3.source_unit then n.key_value else r3.source_unit end, "") as unit,
+		ifnull(${countType}(case when n.key_value = r3.source_unit then cast(m.key_value as double) else cast(m.key_value as double)/cast(r3.factor as double) end), 0) as value
+		from (select r1.key_name, r1.patient_id, r1.visit_id, r1.key_value from rwebox.result r1
+		<if test="cohortIds != null and cohortIds.length > 0">
+			join rwebox.cohort_member cm on r1.patient_id = cm.patient_id and cm.cohort_id in
+			<foreach collection="cohortIds" item="cohortId" open="(" close=")" separator=",">
+				#{cohortId}
+			</foreach>
+		</if>
+		where r1.study_id = #{studyId} and r1.subject = #{subject} and r1.key_name = #{indicator}
+		<if test="startDate != null and startDate != ''">
+			<![CDATA[ and r1.visit_on >= #{startDate} ]]>
+		</if>
+		<if test="endDate != null and endDate != ''">
+			<![CDATA[ and r1.visit_on <= #{endDate} ]]>
+		</if>
+		) m
+		left join (select r2.key_name, r2.visit_id, r2.key_value from rwebox.result r2 where r2.study_id = #{studyId} and r2.subject = #{subject} and r2.key_name = concat(#{indicator}, ' Unit')) n on m.visit_id = n.visit_id and locate(m.key_name, n.key_name) > 0
+		left join rwebox.result_config r3 on m.key_name = r3.indicator and r3.subject = #{subject} and (n.key_value = r3.source_unit or n.key_value = r3.target_unit)
+		left join rwebox.result_demographic rd on rd.study_id = #{studyId} and m.patient_id = rd.patient_id
+		where n.key_value != '' and rd.key_name = 'Location Country'
+		group by name, unit
+	</select>
+
+	<select id="queryListSurvivalCurve" resultType="java.util.Map" >
+		select ceil(datediff(ifnull(c.death, now()), c.diagnosis)/${timeType}) as survival, count(c.patient_id) as counter
+		from (select r.patient_id,
+			max(case r.key_name when 'Diagnosis Date' then cast(r.key_value as timestamp) else null end ) as diagnosis,
+			max(case r.key_name when 'Death Date' then cast(r.key_value as timestamp) else null end ) as death
+			from rwebox.result r
+			where r.study_id = #{studyId} and r.subject = #{subject}
+			group by r.patient_id) c
+		<if test="cohortId != null and cohortId != ''">
+			join rwebox.cohort_member cm on c.patient_id = cm.patient_id and cm.cohort_id = #{cohortId}
+		</if>
+		where c.diagnosis is not null
+		group by
+		survival order by survival desc
+	</select>
+
+	<select id="queryListFirstPDCurve" resultType="java.util.Map" >
+		select ceil(datediff(ifnull(c.death, now()), c.pdDate)/${timeType}) as survival, count(distinct c.patient_id) as counter
+		from (select r.patient_id,
+			max(case r.key_name when 'Death Date' then cast(r.key_value as timestamp) else null end ) as death,
+			max(case r.key_name when 'PD' then r.key_value else '' end ) as pd,
+			min(case r.key_name when 'PD Date' then cast(r.key_value as timestamp) else null end ) as pdDate
+			from rwebox.result r
+			where r.study_id = #{studyId} and r.subject = #{subject}
+			group by r.patient_id) c
+		<if test="cohortId != null and cohortId != ''">
+			join rwebox.cohort_member cm on c.patient_id = cm.patient_id and cm.cohort_id = #{cohortId}
+		</if>
+		where c.pdDate is not null and c.pd = '是'
+		group by
+		survival order by survival desc
+	</select>
+
+	<select id="queryBiomarkerTimes" resultType="java.lang.Integer">
+		select b.times from (
+			select r.patient_id, r.key_value, count(distinct r.visit_id) as times
+			from rwebox.result r
+			<if test="cohortIds != null and cohortIds.length > 0">
+				join rwebox.cohort_member cm on r.patient_id = cm.patient_id and cm.cohort_id in
+				<foreach collection="cohortIds" item="cohortId" open="(" close=")" separator=",">
+					#{cohortId}
+				</foreach>
+			</if>
+			where r.study_id = #{studyId} AND r.subject = #{subject} and r.key_value != ''
+			<choose>
+				<when test="measureType != null and measureType == 'Copy'">
+					and r.key_name = 'Copy Biomarker'
+				</when>
+				<when test="measureType != null and measureType == 'Expression'">
+					and r.key_name = 'Expression Biomarker'
+				</when>
+				<otherwise>
+					and r.key_name = 'Mutation Biomarker'
+				</otherwise>
+			</choose>
+			group by r.patient_id, r.key_value
+		) b group by b.times order by b.times
+	</select>
+
+	<select id="queryListEvaluation" resultType="java.lang.String">
+		select r.key_value as evaluation from rwebox.result r
+		where r.study_id = #{studyId} AND r.subject = #{subject} and r.key_value != ''
+		<choose>
+			<when test="measureType != null and measureType == 'Copy'">
+				and r.key_name = 'Copy Detection Result'
+			</when>
+			<when test="measureType != null and measureType == 'Expression'">
+				and r.key_name = 'Expression Detection Result'
+			</when>
+			<otherwise>
+				and r.key_name = 'Mutation Detection Result'
+			</otherwise>
+		</choose>
+		group by r.key_value
+	</select>
+
+	<select id="queryListBiomarkerTestData" resultType="com.movit.rwe.modules.bi.dashboard.vo.BiomarkerTestVo" >
+		<choose>
+			<when test="measureType != null and measureType == 'Copy'">
+				select c.biomarker, c.evaluation, count(distinct c.patient_id) as amount from (
+					select r.subject, r.study_id, r.patient_id, r.visit_id, r.visit_on, r.group_id,
+						max(case r.key_name when 'Copy Biomarker' then r.key_value else '' end ) as biomarker
+						max(case r.key_name when 'Copy Detection Result' then r.key_value else '' end ) as evaluation
+					from rwebox.result r
+					<if test="cohortIds != null and cohortIds.length > 0">
+						join rwebox.cohort_member cm on r.patient_id = cm.patient_id and cm.cohort_id in
+						<foreach collection="cohortIds" item="cohortId" open="(" close=")" separator=",">
+							#{cohortId}
+						</foreach>
+					</if>
+					where r.study_id = #{studyId} and r.subject = #{subject}
+					group by r.subject, r.study_id, r.patient_id, r.visit_id, r.visit_on, r.group_id
+				) c where 1=1
+				<choose>
+					<when test="biomarkers == null">
+						and c.biomarker != ''
+					</when>
+					<otherwise>
+						and c.biomarker in
+						<foreach collection="biomarkers" item="biomarker" open="(" close=")" separator=",">
+							#{biomarker}
+						</foreach>
+					</otherwise>
+				</choose>
+				<if test="times != null and times > 0">
+					and exists(select r.patient_id, count(distinct r.visit_id) as times from rwebox.result r where r.study_id = #{studyId}
+					and r.subject = #{subject} and r.key_name = 'Copy Biomarker'
+					and r.patient_id = c.patient_id group by r.patient_id having times > #{times})
+				</if>
+				group by biomarker, c.evaluation
+			</when>
+			<when test="measureType != null and measureType == 'Expression'">
+				select c.biomarker, c.evaluation, count(distinct c.patient_id) as amount from (
+					select r.subject, r.study_id, r.patient_id, r.visit_id, r.visit_on, r.group_id,
+						max(case r.key_name when 'Expression Biomarker' then r.key_value else '' end ) as biomarker
+						max(case r.key_name when 'Expression Detection Result' then r.key_value else '' end ) as evaluation
+					from rwebox.result r
+					<if test="cohortIds != null and cohortIds.length > 0">
+						join rwebox.cohort_member cm on r.patient_id = cm.patient_id and cm.cohort_id in
+						<foreach collection="cohortIds" item="cohortId" open="(" close=")" separator=",">
+							#{cohortId}
+						</foreach>
+					</if>
+					where r.study_id = #{studyId} and r.subject = #{subject}
+					group by r.subject, r.study_id, r.patient_id, r.visit_id, r.visit_on, r.group_id
+				) c where 1=1
+				<choose>
+					<when test="biomarkers == null">
+						and c.biomarker != ''
+					</when>
+					<otherwise>
+						and c.biomarker in
+						<foreach collection="biomarkers" item="biomarker" open="(" close=")" separator=",">
+							#{biomarker}
+						</foreach>
+					</otherwise>
+				</choose>
+				<if test="times != null and times > 0">
+					and exists(select r.patient_id, count(distinct r.visit_id) as times from rwebox.result r where r.study_id = #{studyId}
+						and r.subject = #{subject} and r.key_name = 'Expression Biomarker'
+						and r.patient_id = c.patient_id group by r.patient_id having times > #{times})
+				</if>
+				group by biomarker, c.evaluation
+			</when>
+			<otherwise>
+				select trim(concat(c.biomarker, ' ', c.site, ' ', c.exon, ' ', c.changeType)) as biomarker, c.evaluation, count(distinct c.patient_id) as amount from (
+					select r.subject, r.study_id, r.patient_id, r.visit_id, r.visit_on, r.group_id,
+						max(case r.key_name when 'Mutation Biomarker' then r.key_value else '' end ) as biomarker,
+						max(case r.key_name when 'Mutation Site' then r.key_value else '' end ) as site,
+						max(case r.key_name when 'Mutation Exon' then r.key_value else '' end ) as exon,
+						max(case r.key_name when 'Mutation Change Type' then r.key_value else '' end ) as changeType,
+						max(case r.key_name when 'Mutation Detection Result' then r.key_value else '' end ) as evaluation
+					from rwebox.result r
+						<if test="cohortIds != null and cohortIds.length > 0">
+							join rwebox.cohort_member cm on r.patient_id = cm.patient_id and cm.cohort_id in
+							<foreach collection="cohortIds" item="cohortId" open="(" close=")" separator=",">
+								#{cohortId}
+							</foreach>
+						</if>
+					where r.study_id = #{studyId} and r.subject = #{subject}
+					group by r.subject, r.study_id, r.patient_id, r.visit_id, r.visit_on, r.group_id
+					) c where 1=1
+					<choose>
+						<when test="biomarkers == null">
+							and c.biomarker != ''
+						</when>
+						<otherwise>
+							and c.biomarker in
+							<foreach collection="biomarkers" item="biomarker" open="(" close=")" separator=",">
+								#{biomarker}
+							</foreach>
+						</otherwise>
+					</choose>
+					<if test="times != null and times > 0">
+						and exists(select r.patient_id, count(distinct r.visit_id) as times from rwebox.result r where r.study_id = #{studyId}
+						and r.subject = #{subject} and r.key_name = 'Mutation Biomarker'
+						and r.patient_id = c.patient_id group by r.patient_id having times > #{times})
+					</if>
+				group by biomarker, c.evaluation
+			</otherwise>
+		</choose>
+	</select>
+
+	<select id="queryListBiomarkerTestSubData" resultType="java.lang.String">
+		<choose>
+			<when test="measureType != null and measureType == 'Copy'">
+				select distinct c.biomarker from (
+				select r.subject, r.study_id, r.patient_id, r.visit_id, r.visit_on, r.group_id,
+				max(case r.key_name when 'Copy Biomarker' then r.key_value else '' end ) as biomarker
+				from rwebox.result r
+				where r.study_id = #{studyId} and r.subject = #{subject}
+				group by r.subject, r.study_id, r.patient_id, r.visit_id, r.visit_on, r.group_id
+				) c where c.biomarker like concat(#{biomarker}, '%')
+			</when>
+			<when test="measureType != null and measureType == 'Expression'">
+				select distinct c.biomarker from (
+				select r.subject, r.study_id, r.patient_id, r.visit_id, r.visit_on, r.group_id,
+				max(case r.key_name when 'Expression Biomarker' then r.key_value else '' end ) as biomarker
+				from rwebox.result r
+				where r.study_id = #{studyId} and r.subject = #{subject}
+				group by r.subject, r.study_id, r.patient_id, r.visit_id, r.visit_on, r.group_id
+				) c where c.biomarker like concat(#{biomarker}, '%')
+			</when>
+			<otherwise>
+				select distinct trim(concat(c.biomarker, ' ', c.site, ' ', c.exon, ' ', c.changeType)) as biomarker from (
+					select r.subject, r.study_id, r.patient_id, r.visit_id, r.visit_on, r.group_id,
+						max(case r.key_name when 'Mutation Biomarker' then r.key_value else '' end ) as biomarker,
+						max(case r.key_name when 'Mutation Site' then r.key_value else '' end ) as site,
+						max(case r.key_name when 'Mutation Exon' then r.key_value else '' end ) as exon,
+						max(case r.key_name when 'Mutation Change Type' then r.key_value else '' end ) as changeType
+					from rwebox.result r
+					where r.study_id = #{studyId} and r.subject = #{subject}
+					group by r.subject, r.study_id, r.patient_id, r.visit_id, r.visit_on, r.group_id
+				) c where trim(concat(c.biomarker, ' ', c.site, ' ', c.exon, ' ', c.changeType)) like concat(#{biomarker}, '%')
+			</otherwise>
+		</choose>
+	</select>
+
+	<select id="countPatient" resultType="java.lang.Integer">
+		select count(distinct rd.patient_id) from rwebox.result_demographic rd
+		<if test="cohortIds != null and cohortIds.length > 0">
+			join rwebox.cohort_member cm on cm.patient_id = rd.patient_id and cm.cohort_id in
+			<foreach collection="cohortIds" item="cohortId" open="(" close=")" separator=",">
+				#{cohortId}
+			</foreach>
+		</if>
+		where rd.study_id = #{studyId} and rd.subject = #{subject}
+	</select>
+</mapper>

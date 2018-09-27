@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.movit.rwe.modules.bi.base.dao.hive.PatientGroupInfoDao">
+
+	<select id="getPatientIdsLikeGroupIds" resultType="String">
+		select p.patient_id from patient_group_info p where 
+		1=1
+		<choose>
+			<when test="groupIds.length==0">
+				and p.groupids like ''
+			</when>
+			<otherwise>
+				<if test="!(groupIds.length==1 and groupIds[0]=='%%')">
+					<foreach collection="groupIds" item="cohort" open="and ("
+						close=")" separator="or">
+						p.groupids like #{cohort}
+					</foreach>
+				</if>
+			</otherwise>
+		</choose> 
+	</select>
+</mapper>

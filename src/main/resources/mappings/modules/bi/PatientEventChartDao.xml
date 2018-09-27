@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.movit.rwe.modules.bi.base.dao.hive.PatientEventChartDao">
+   
+	<select id="getPatientEventByStudyIdAndCohorts"
+		resultType="com.movit.rwe.modules.bi.base.entity.hive.PatientEvent">
+		select guid as "guid",study_id as "studyId",event.patient_id as "patientId",reference_code as "referenceCode",
+		       event_name as "eventName",event_type as "eventType",event_datetime as "eventDatetime",
+		       assessment_response as "assessmentResponse",sortReferenceCode.survivalDay as 'survivalDay' 
+		from patient_event event,
+		    
+			 (select reference_code code,datediff(max(event_datetime),min(event_datetime)) as survivalDay
+				      from patient_event event left join patient_group_info groupInfo
+				      on groupInfo.patient_id  = event.patient_id
+				      where study_id =#{studyId}
+                    <choose>
+                        <when test="cohorts.length==0">
+                            and groupids like ''
+                        </when>
+                        <otherwise>
+                        	<if test="!(cohorts.length==1 and cohorts[0]=='%%')">
+	                            <foreach collection="cohorts" item="cohort" open="and ("
+	                                     close=")" separator="or">
+	                                groupids like #{cohort}
+	                            </foreach>
+                            </if>
+                        </otherwise>
+                    </choose>
+				      group by reference_code
+				      order by datediff(max(event_datetime),min(event_datetime)) desc
+				      limit ${pageNo} 
+				     ) sortReferenceCode
+		   
+		where 
+		       event.reference_code = sortReferenceCode.code
+		       
+			   <if test="referenceCodeList!=null">  
+				      and reference_code not in
+				     <foreach collection="referenceCodeList" item="referenceCode" index="index" open="(" separator="," close=")">#{referenceCode}</foreach>
+		       </if> 
+					          
+			    <if test="assessmentResponseList!=null">  
+			      and assessment_response not in
+			     <foreach collection="assessmentResponseList" item="assessmentResponse" index="index" open="(" separator="," close=")">#{assessmentResponse}</foreach>
+			   </if> 
+	   
+			    <if test="eventTypeList!=null">  
+			      and event_type not in
+			     <foreach collection="eventTypeList" item="eventType" index="index" open="(" separator="," close=")">#{eventType}</foreach>
+			   </if> 
+		order by reference_code asc,sortReferenceCode.survivalDay desc,event.event_datetime
+		
+	</select>
+    
+    
+    
+     <select id="getAllAssessmentOfResponse"
+		resultType="com.movit.rwe.modules.bi.base.entity.hive.PatientEvent">
+		
+		select distinct(assessment_response) assessmentResponse from patient_event order by assessment_response
+		
+	</select>
+	
+     <select id="getAllEvent"
+		resultType="com.movit.rwe.modules.bi.base.entity.hive.PatientEvent">
+		
+		select distinct(event_type) eventType from patient_event 
+		where event_type!='Followup'
+		
+	</select>
+	
+	 <select id="getRefCode"
+		resultType="com.movit.rwe.modules.bi.base.entity.hive.PatientEvent">
+		
+		select reference_code code
+				      from patient_event event
+				      group by reference_code
+				      order by datediff(max(event_datetime),min(event_datetime))
+				      limit ${pageNo} 
+		
+	</select>
+	
+</mapper>

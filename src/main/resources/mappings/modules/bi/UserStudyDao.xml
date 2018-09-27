@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.movit.rwe.modules.bi.base.dao.mysql.UserStudyDao">
+    
+	<sql id="user_study_allColumns">
+		`md_user_study`.`id`,
+	    `md_user_study`.`studyId`,
+	    `md_user_study`.`userId`,
+	    `md_user_study`.`remarks`,
+	    `md_user_study`.`createBy`,
+	    `md_user_study`.`createDate`,
+	    `md_user_study`.`updateBy`,
+	    `md_user_study`.`updateDate`,
+	    `md_user_study`.`delFlag`
+	</sql>
+
+	<select id="findStudiesByUserId" resultType="com.movit.rwe.modules.bi.base.entity.mysql.Study">
+		SELECT * from md_study where id in (SELECT studyId from md_user_study where userId = #{userId})
+	</select>
+    
+	<select id="findDashBoardMenuListByUserId" resultType="com.movit.rwe.modules.sys.entity.Menu">
+      select * from(
+		(
+			SELECT 
+			CONCAT("study_",st.id) as 'id',
+			CONCAT("ta_",st.taId) as 'parentId',
+			'' as 'parent_ids',
+			st.studyName as 'name',
+			'' as 'href',
+			'' as 'target',
+			'' as 'icon',
+			0 as 'sort',
+			'1' as 'is_show',
+			'' as 'permission',
+			'' as remarks,
+			st.createBy as 'createBy.id',
+			st.createDate as 'createDate',
+			st.updateBy as 'updateBy.id',
+			st.updateDate as 'updateDate'
+			FROM md_user_study us 
+			left join md_study st on us.studyId=st.id
+			left join cb_dashboard db on us.studyId=db.studyId
+			left join md_ta ta on st.taId = ta.id
+			where us.userId = #{userId}
+			and us.delFlag = 0
+			and st.delFlag = 0
+			and db.delFlag = 0
+			and ta.delFlag = 0
+			order by st.sort
+		)
+		union
+		(
+		SELECT 
+		    CONCAT('ta_', ta.id) AS 'id',
+		    '2469fbb092544ee381e94a961de645ef' AS 'parentId',
+		    '' AS 'parent_ids',
+		    ta.taName AS 'name',
+		    '' AS 'href',
+		    '' AS 'target',
+		    '' AS 'icon',
+		    ta.sort AS 'sort',
+		    '1' AS 'is_show',
+		    '' AS 'permission',
+		    ta.remarks AS remarks,
+		    ta.createBy AS 'createBy.id',
+		    ta.createDate AS 'createDate',
+		    ta.updateBy AS 'updateBy.id',
+		    ta.updateDate AS 'updateDate'
+		FROM
+		    md_user_study us
+		    LEFT JOIN md_study st ON us.studyId = st.id
+		    left join md_ta ta on st.taId=ta.id
+		WHERE
+		    us.userId = #{userId}
+    		and us.delFlag = 0
+			and st.delFlag = 0
+			and ta.delFlag = 0
+		)
+    ) tmp ORDER BY sort asc
+
+	</select>
+
+	<insert id="insert">
+		INSERT INTO md_user_study(
+		id,
+		studyId,
+		userId,
+		createBy,
+		createDate,
+		updateBy,
+		updateDate,
+		remarks,
+		delFlag
+		) VALUES (
+		#{id},
+		#{studyId},
+		#{userId},
+		#{createBy.id},
+		#{createDate},
+		#{updateBy.id},
+		#{updateDate},
+		#{remarks},
+		#{delFlag}
+		)
+	</insert>
+
+	<delete id="deleteUserStudyByUser">
+		DELETE FROM md_user_study WHERE userId = #{userId}
+	</delete>
+
+	<select id="queryListByUserId" resultType="com.movit.rwe.modules.bi.base.entity.mysql.UserStudy">
+		select <include refid="user_study_allColumns" />
+		from md_user_study where userId = #{userId} and delFlag = 0
+	</select>
+</mapper>

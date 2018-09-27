@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.movit.rwe.modules.bi.base.dao.hive.QuestionnaireDao">
+
+
+	<select id="findAllQuestionnaire" resultType="com.movit.rwe.modules.bi.base.entity.hive.Questionnaire">
+		select name as name from survey where study_id=#{studyId} group by name;
+	</select>
+	
+	<select id="getQuestionnaireByGroupIdAndType" resultType="double">
+		select  score
+		from survey,patient_group_info groupInfo 
+		where   study_id=#{studyId}
+		        and survey.name = #{type}
+				and survey.patient_id  = groupInfo.patient_id     
+				and groupids like CONCAT('%',#{groupId},',%') 
+	</select>
+	
+	<select id="getAllQuestionnaireType" resultType="string">
+	
+		select name from survey where study_id=#{studyId} group by name order by name
+		      
+	</select>
+	
+</mapper>

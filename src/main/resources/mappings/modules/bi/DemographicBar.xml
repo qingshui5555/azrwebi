@@ -1,0 +1,447 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.movit.rwe.modules.bi.base.dao.hive.DemographicBarDao">
+
+
+	<select id="countByGender"
+		resultType="com.movit.rwe.modules.bi.base.entity.hive.DemographicBar">
+		SELECT
+		<choose>
+			<when test="locale=='zh_cn' or locale=='zh'">
+				CASE p.gender WHEN 'M' THEN '男'
+				WHEN 'F' THEN '女'
+				ELSE
+				'空' END name, count(1) val
+			</when>
+			<otherwise>
+				CASE p.gender WHEN 'M' THEN 'Male'
+				WHEN 'F' THEN 'Female'
+				ELSE 'NA' END name, count(1) val
+			</otherwise>
+		</choose>
+		FROM PATIENT p left join patient_group_info i on p.guid=i.patient_id
+		WHERE
+		p.STUDY_ID = #{studyId}
+
+		<choose>
+			<when test="groupids.length==0">
+				and i.groupids like ''
+			</when>
+			<otherwise>
+				<if test="!(groupids.length==1 and groupids[0]=='%%')">
+					<foreach collection="groupids" item="cohort" open="and ("
+						close=")" separator="or">
+						i.groupids like #{cohort}
+					</foreach>
+				</if>
+			</otherwise>
+		</choose>
+
+
+		GROUP BY
+		<choose>
+			<when test="locale=='zh_cn' or locale=='zh'">
+				CASE p.gender WHEN 'M' THEN '男'
+				WHEN 'F' THEN '女'
+				ELSE
+				'空' END
+			</when>
+			<otherwise>
+				CASE p.gender WHEN 'M' THEN 'Male'
+				WHEN 'F' THEN 'Female'
+				ELSE 'NA' END
+			</otherwise>
+		</choose>
+
+		ORDER BY
+		<choose>
+			<when test="locale=='zh_cn' or locale=='zh'">
+				CASE p.gender WHEN 'M' THEN '男'
+				WHEN 'F' THEN '女'
+				ELSE
+				'空' END
+			</when>
+			<otherwise>
+				CASE p.gender WHEN 'M' THEN 'Male'
+				WHEN 'F' THEN 'Female'
+				ELSE 'NA' END
+			</otherwise>
+		</choose>
+	</select>
+
+	<select id="countByAge"
+		resultType="com.movit.rwe.modules.bi.base.entity.hive.DemographicBar">
+		select
+		CASE
+		WHEN birthday &gt;= #{s1} and birthday &lt;= #{e1} THEN
+		'0-17'
+		WHEN birthday &gt;= #{s2} and birthday &lt;= #{e2} THEN '18-34'
+		WHEN birthday &gt;= #{s3} and birthday &lt;= #{e3} THEN '35-44'
+		WHEN
+		birthday &gt;= #{s4} and birthday &lt;= #{e4} THEN '45-54'
+		WHEN
+		birthday &gt;= #{s5} and birthday &lt;= #{e5} THEN '55-64'
+		WHEN
+		birthday &gt;= #{s6} and birthday &lt;= #{e6} THEN '65-74'
+		WHEN
+		birthday &gt;= #{s7} and birthday &lt;= #{e7} THEN '75-84'
+		WHEN
+		birthday &lt;= #{e8} THEN '85+'
+		ELSE
+
+		<choose>
+			<when test="locale=='zh_cn' or locale=='zh'">
+				'空'
+			</when>
+			<otherwise>
+				'NA'
+			</otherwise>
+		</choose>
+
+		END name, count(1) val
+		from PATIENT
+		p left join patient_group_info i on
+		p.guid=i.patient_id WHERE
+		p.STUDY_ID = #{studyId}
+
+		<choose>
+			<when test="groupids.length==0">
+				and i.groupids like ''
+			</when>
+			<otherwise>
+				<if test="!(groupids.length==1 and groupids[0]=='%%')">
+					<foreach collection="groupids" item="cohort" open="and ("
+						close=")" separator="or">
+						i.groupids like #{cohort}
+					</foreach>
+				</if>
+			</otherwise>
+		</choose>
+
+
+		GROUP BY
+		CASE
+		WHEN birthday &gt;= #{s1} and birthday &lt;= #{e1} THEN
+		'0-17'
+		WHEN birthday &gt;= #{s2} and birthday &lt;= #{e2} THEN '18-34'
+		WHEN birthday &gt;= #{s3} and birthday &lt;= #{e3} THEN '35-44'
+		WHEN
+		birthday &gt;= #{s4} and birthday &lt;= #{e4} THEN '45-54'
+		WHEN
+		birthday &gt;= #{s5} and birthday &lt;= #{e5} THEN '55-64'
+		WHEN
+		birthday &gt;= #{s6} and birthday &lt;= #{e6} THEN '65-74'
+		WHEN
+		birthday &gt;= #{s7} and birthday &lt;= #{e7} THEN '75-84'
+		WHEN
+		birthday &lt;= #{e8} THEN '85+'
+		ELSE
+
+		<choose>
+			<when test="locale=='zh_cn' or locale=='zh'">
+				'空'
+			</when>
+			<otherwise>
+				'NA'
+			</otherwise>
+		</choose>
+
+		END
+		order by
+		CASE
+		WHEN birthday &gt;= #{s1} and birthday &lt;= #{e1} THEN '0-17'
+		WHEN
+		birthday &gt;= #{s2} and birthday &lt;= #{e2} THEN '18-34'
+		WHEN
+		birthday &gt;= #{s3} and birthday &lt;= #{e3} THEN '35-44'
+		WHEN
+		birthday &gt;= #{s4} and birthday &lt;= #{e4} THEN '45-54'
+		WHEN
+		birthday &gt;= #{s5} and birthday &lt;= #{e5} THEN '55-64'
+		WHEN
+		birthday &gt;= #{s6} and birthday &lt;= #{e6} THEN '65-74'
+		WHEN
+		birthday &gt;= #{s7} and birthday &lt;= #{e7} THEN '75-84'
+		WHEN
+		birthday &lt;= #{e8} THEN '85+'
+		ELSE
+
+		<choose>
+			<when test="locale=='zh_cn' or locale=='zh'">
+				'空'
+			</when>
+			<otherwise>
+				'NA'
+			</otherwise>
+		</choose>
+
+		END
+	</select>
+
+	<select id="countSmoking"
+		resultType="com.movit.rwe.modules.bi.base.entity.hive.DemographicBar">
+		select
+		CASE ph.value
+		WHEN 'Current' THEN '1'
+		WHEN 'Ex-smoker' THEN '2'
+		ELSE '3' END name, count(DISTINCT ph.patient_id) val
+		from PATIENT_HISTORY
+		ph inner join PATIENT p on ph.patient_id = p.guid
+		left join patient_group_info i on ph.patient_id=i.patient_id
+		WHERE ph.name = 'smoking'
+		
+		<choose>
+			<when test="groupids.length==0">
+				and i.groupids like ''
+			</when>
+			<otherwise>
+				<if test="!(groupids.length==1 and groupids[0]=='%%')">
+					<foreach collection="groupids" item="cohort" open="and ("
+						close=")" separator="or">
+						i.groupids like #{cohort}
+					</foreach>
+				</if>
+			</otherwise>
+		</choose>
+		GROUP BY
+		CASE ph.value
+		WHEN 'Current' THEN '1'
+		WHEN 'Ex-smoker' THEN '2'
+		ELSE '3' END
+	</select>
+
+	<select id="countAlcohol"
+		resultType="com.movit.rwe.modules.bi.base.entity.hive.DemographicBar">
+		SELECT
+		CASE gender WHEN 'M' THEN '男'
+		WHEN 'F' THEN '女'
+		ELSE
+		'其他' END name, count(1) val
+		FROM PATIENT WHERE STUDY_ID = #{studyId}
+		GROUP BY
+		CASE gender WHEN 'M' THEN '男'
+		WHEN 'F' THEN '女'
+		ELSE '其他' END
+		ORDER BY name DESC
+
+	</select>
+
+	<select id="countBmi"
+		resultType="com.movit.rwe.modules.bi.base.entity.hive.DemographicBar">
+		select
+		CASE
+		WHEN cast(ph.value as decimal) &gt; 7.5 and
+		cast(ph.value as decimal) &lt;
+		18.4 THEN '7.5-18.4'
+		WHEN cast(ph.value
+		as decimal) &gt; 18.5 and cast(ph.value as decimal)
+		&lt; 24.9 THEN
+		'18.5-24.9'
+		WHEN cast(ph.value as decimal) &gt; 25 and cast(ph.value as
+		decimal) &lt;
+		29.9 THEN '25-29.9'
+		WHEN cast(ph.value as decimal) &gt; 30
+		and cast(ph.value as decimal) &lt;
+		34.5 THEN '30-34.5'
+		WHEN
+		cast(ph.value as decimal) &gt; 35 and cast(ph.value as decimal) &lt;
+		39.5 THEN '35-39.5'
+		WHEN cast(ph.value as decimal) &gt; 40 THEN '>40'
+		ELSE '其他' END name, count(1) val
+		from PATIENT_HISTORY ph inner join
+		PATIENT p on ph.patient_id = p.guid
+		left join patient_group_info i on ph.patient_id=i.patient_id
+		WHERE ph.name = 'BMI(体重/身高2)'
+		
+		<choose>
+			<when test="groupids.length==0">
+				and i.groupids like ''
+			</when>
+			<otherwise>
+				<if test="!(groupids.length==1 and groupids[0]=='%%')">
+					<foreach collection="groupids" item="cohort" open="and ("
+						close=")" separator="or">
+						i.groupids like #{cohort}
+					</foreach>
+				</if>
+			</otherwise>
+		</choose>
+		
+		GROUP
+		BY
+		CASE
+		WHEN cast(ph.value as decimal) &gt; 7.5 and cast(ph.value as
+		decimal) &lt;
+		18.4 THEN '7.5-18.4'
+		WHEN cast(ph.value as decimal) &gt;
+		18.5 and cast(ph.value as decimal)
+		&lt; 24.9 THEN '18.5-24.9'
+		WHEN
+		cast(ph.value as decimal) &gt; 25 and cast(ph.value as decimal) &lt;
+		29.9 THEN '25-29.9'
+		WHEN cast(ph.value as decimal) &gt; 30 and
+		cast(ph.value as decimal) &lt;
+		34.5 THEN '30-34.5'
+		WHEN cast(ph.value as
+		decimal) &gt; 35 and cast(ph.value as decimal) &lt;
+		39.5 THEN '35-39.5'
+		WHEN cast(ph.value as decimal) &gt; 40 THEN '>40'
+		ELSE '其他' END
+	</select>
+
+	<select id="countCancerType"
+		resultType="com.movit.rwe.modules.bi.base.entity.hive.DemographicBar">
+		select
+		da.value as name,
+		count(1) as val
+		from
+		diagnose_attributes da
+		left
+		join diagnose d on
+		substr(da.diagnose_id,1,instr(da.diagnose_id,'_')-1) = d.guid
+		left join
+		patient_group_info i on d.patient_id=i.patient_id
+		where
+		d.study_id =
+		#{studyId} and
+		da.name='癌症类型'
+
+		<choose>
+			<when test="groupids.length==0">
+				and i.groupids like ''
+			</when>
+			<otherwise>
+				<if test="!(groupids.length==1 and groupids[0]=='%%')">
+					<foreach collection="groupids" item="cohort" open="and ("
+						close=")" separator="or">
+						i.groupids like #{cohort}
+					</foreach>
+				</if>
+			</otherwise>
+		</choose>
+
+
+		group by da.value
+	</select>
+
+	<select id="countCancerStageType"
+		resultType="com.movit.rwe.modules.bi.base.entity.hive.DemographicBar">
+		select
+		da.value as name,
+		count(1) as val
+		from
+		diagnose_attributes da
+		left
+		join diagnose d on da.diagnose_id = d.guid
+		where
+		<!-- d.study_id = #{studyId} and -->
+		da.name='癌症分期类型'
+		group by da.value
+	</select>
+
+	<select id="getTotalIgeList" resultType="java.lang.Double">
+		select
+		result
+		from total_ige t
+		left join patient_group_info i on
+		t.patient_id=i.patient_id WHERE
+		t.study_id = #{studyId}
+		<choose>
+			<when test="groupids.length==0">
+				and i.groupids like ''
+			</when>
+			<otherwise>
+				<if test="!(groupids.length==1 and groupids[0]=='%%')">
+					<foreach collection="groupids" item="cohort" open="and ("
+						close=")" separator="or">
+						i.groupids like #{cohort}
+					</foreach>
+				</if>
+			</otherwise>
+		</choose>
+		order by result desc
+	</select>
+	
+	<select id="getLabTestViewConfigDate" resultType="java.lang.Double">
+		select
+		result
+		from lab_test t
+		left join patient_group_info i on
+		t.patient_id=i.patient_id WHERE
+		t.study_id = #{studyId} and t.indicator= #{viewName} and result!='' 
+		<choose>
+			<when test="groupids.length==0">
+				and i.groupids like ''
+			</when>
+			<otherwise>
+				<if test="!(groupids.length==1 and groupids[0]=='%%')">
+					<foreach collection="groupids" item="cohort" open="and ("
+						close=")" separator="or">
+						i.groupids like #{cohort}
+					</foreach>
+				</if>
+			</otherwise>
+		</choose>
+		order by result desc
+	</select>
+	
+	
+	<select id="countPathologicalStage"
+		resultType="com.movit.rwe.modules.bi.base.entity.hive.DemographicBar">
+		SELECT
+		type as name,
+		count(1) as val
+		FROM pathological_stage p left join patient_group_info i on p.patient_id=i.patient_id
+		WHERE
+		p.study_id = #{studyId}
+		<choose>
+			<when test="groupids.length==0">
+				and i.groupids like ''
+			</when>
+			<otherwise>
+				<if test="!(groupids.length==1 and groupids[0]=='%%')">
+					<foreach collection="groupids" item="cohort" open="and ("
+						close=")" separator="or">
+						i.groupids like #{cohort}
+					</foreach>
+				</if>
+			</otherwise>
+		</choose>
+		GROUP BY type order by type
+	</select>
+	
+	<select id="getCountByGender"
+		resultType="com.movit.rwe.modules.bi.base.entity.hive.DemographicBar">
+		SELECT
+				CASE p.gender WHEN 'M' THEN '1'
+				WHEN 'F' THEN '2'
+				ELSE '3' END name, 
+				count(1) val
+		FROM PATIENT p left join patient_group_info i on p.guid=i.patient_id
+		WHERE
+		p.STUDY_ID = #{studyId}
+
+		<choose>
+			<when test="groupids.length==0">
+				and i.groupids like ''
+			</when>
+			<otherwise>
+				<if test="!(groupids.length==1 and groupids[0]=='%%')">
+					<foreach collection="groupids" item="cohort" open="and ("
+						close=")" separator="or">
+						i.groupids like #{cohort}
+					</foreach>
+				</if>
+			</otherwise>
+		</choose>
+		GROUP BY
+				CASE p.gender WHEN 'M' THEN '1'
+				WHEN 'F' THEN '2'
+				ELSE '3' END
+				
+		ORDER BY
+				CASE p.gender WHEN 'M' THEN '1'
+				WHEN 'F' THEN '2'
+				ELSE '3' END		
+	</select>
+</mapper>

@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.movit.rwe.modules.bi.base.dao.hive.BiomarkerTestDao">
+
+
+	<select id="getByReferenceCode"
+		resultType="com.movit.rwe.modules.bi.base.entity.hive.BiomarkerTest">
+		select
+		biomarker as "gene",
+		evaluation as "evaluation",
+		reference_code as "referenceCode",
+		test_date as "testDate"
+		from
+		biomarker_test 
+		where reference_code=#{referenceCode} 
+		and study_id=#{studyId} 
+		and test_date is not null 
+		and gene!=''
+		AND measure != 'Mutation'
+		UNION ALL
+		SELECT
+			trim(concat(biomarker,' ',filed2,' ',filed1,' ',filed3)) AS "gene",
+			evaluation AS "evaluation",
+			reference_code AS "referenceCode",
+			test_date AS "testDate"
+		FROM
+			biomarker_test
+		WHERE
+			reference_code =#{referenceCode}
+		AND study_id =#{studyId}
+		AND test_date IS NOT NULL
+		AND gene != '' 
+		AND measure = 'Mutation'
+	</select>
+
+	<select id="getSubBiomarkers"
+			resultType="String">
+		select DISTINCT concat(biomarker,' ',filed2,' ',filed1, ' ',filed3) as "biomarkerName"
+		from biomarker_test
+		where study_id = #{studyId}
+		and concat(biomarker,' ',filed2,' ',filed1, ' ',filed3) like concat(#{biomarker},'%')
+	</select>
+
+	<select id="getAmountAndBiomarkerByCohortAndStudyId"
+		resultType="com.movit.rwe.modules.bi.dashboard.vo.BiomarkerTestVo">
+		select b.biomarker as "biomarker",count(distinct b.patient_id) as
+		"amount"
+		from
+		biomarker_test b
+		left join patient_group_info p
+		on
+		b.patient_id=p.patient_id
+		where b.study_id =#{studyId}
+		and
+		b.measure=#{measureType}
+		<choose>
+			<when test="cohorts.length==0">
+				and p.groupids like ''
+			</when>
+			<otherwise>
+				<if test="!(cohorts.length==1 and cohorts[0]=='%%')">
+					<foreach collection="cohorts" item="cohort" open="and ("
+						close=")" separator="or">
+						p.groupids like #{cohort}
+					</foreach>
+				</if>
+			</otherwise>
+		</choose>
+
+		<choose>
+			<when test="biomarkerListSelected.size==0">
+				and 1=2
+			</when>
+			<otherwise>
+				and b.biomarker in
+				<foreach collection="biomarkerListSelected" item="biomarkerSelected"
+					index="index" open="(" separator="," close=")">#{biomarkerSelected}
+				</foreach>
+			</otherwise>
+		</choose>
+
+		<if test="evaluation!=null">
+			and b.evaluation=#{evaluation}
+		</if>
+		
+		<if test="times!=null">
+			and exists(
+			SELECT * from(
+				select a.patient_id,a.biomarker,count(DISTINCT a.visit_id)
+				from biomarker_test a
+				where a.study_id =#{studyId}
+				and a.measure = #{measureType}
+				group by a.patient_id,a.biomarker
+				having count(DISTINCT a.visit_id) >= #{times}
+			) aa 
+			where aa.patient_id = b.patient_id
+			and aa.biomarker = b.biomarker
+		)
+		</if>
+		
+		group by b.biomarker
+		order by b.biomarker
+	</select>
+	
+	
+	<select id="getAmountAndUnionBiomarkerByCohortAndStudyId"
+		resultType="com.movit.rwe.modules.bi.dashboard.vo.BiomarkerTestVo">
+		select concat(b.biomarker,' ',b.filed2,' ',b.filed1,' ',filed3) as "biomarker",count(distinct b.patient_id) as
+		"amount"
+		from
+		biomarker_test b
+		left join patient_group_info p
+		on
+		b.patient_id=p.patient_id
+		where b.study_id =#{studyId}
+		and
+		b.measure=#{measureType}
+		<choose>
+			<when test="cohorts.length==0">
+				and p.groupids like ''
+			</when>
+			<otherwise>
+				<if test="!(cohorts.length==1 and cohorts[0]=='%%')">
+					<foreach collection="cohorts" item="cohort" open="and ("
+						close=")" separator="or">
+						p.groupids like #{cohort}
+					</foreach>
+				</if>
+			</otherwise>
+		</choose>
+
+		<choose>
+			<when test="unionBiomarkerListSelected.size==0">
+				and 1=2
+			</when>
+			<otherwise>
+				and concat(b.biomarker,b.filed2,b.filed1,filed3) in
+				<foreach collection="unionBiomarkerListSelected" item="biomarkerSelected"
+					index="index" open="(" separator="," close=")">#{biomarkerSelected}
+				</foreach>
+			</otherwise>
+		</choose>
+
+		<if test="evaluation!=null">
+			and b.evaluation=#{evaluation}
+		</if>
+		
+		<if test="times!=null">
+			and exists(
+			SELECT * from(
+				select a.patient_id,a.biomarker,count(DISTINCT a.visit_id)
+				from biomarker_test a
+				where a.study_id =#{studyId}
+				and a.measure = #{measureType}
+				group by a.patient_id,a.biomarker
+				having count(DISTINCT a.visit_id) >= #{times}
+			) aa 
+			where aa.patient_id = b.patient_id
+			and aa.biomarker = b.biomarker
+		)
+		</if>
+		group by concat(b.biomarker,' ',b.filed2,' ',b.filed1,' ',filed3)
+		order by concat(b.biomarker,' ',b.filed2,' ',b.filed1,' ',filed3)
+	</select>
+
+	<select id="getAllBiomarker"
+		resultType="com.movit.rwe.modules.bi.dashboard.vo.BiomarkerTestVo">
+		select b.biomarker as "biomarker" from biomarker_test b
+		left join
+		patient_group_info p
+		on
+		b.patient_id=p.patient_id
+
+		where
+		b.study_id=#{studyId}
+		and b.measure='Mutation'
+		<choose>
+			<when test="cohorts.length==0">
+				and p.groupids like ''
+			</when>
+			<otherwise>
+				<if test="!(cohorts.length==1 and cohorts[0]=='%%')">
+					<foreach collection="cohorts" item="cohort" open="and ("
+						close=")" separator="or">
+						p.groupids like #{cohort}
+					</foreach>
+				</if>
+			</otherwise>
+		</choose>
+
+		group by b.biomarker
+		order by b.biomarker
+	</select>
+
+	<select id="getAllEvaluation"
+		resultType="com.movit.rwe.modules.bi.dashboard.vo.BiomarkerTestVo">
+		select evaluation as "evaluation" from biomarker_test where
+		measure=#{measureType} group
+		by evaluation
+		order BY find_in_set(evaluation,"阳性,阴性,中性,空,Positive,Negative,Neutral,NA")
+	</select>
+
+	<select id="getAllResultType"
+		resultType="com.movit.rwe.modules.bi.base.entity.hive.BiomarkerTest">
+		select result_type as resultType from biomarker_test where
+		result_type is
+		not null group by result_type
+	</select>
+
+	<select id="findBiomarkerAndResultTypeGroup"
+		resultType="com.movit.rwe.modules.bi.base.entity.hive.BiomarkerTest">
+		select
+		biomarker,
+		result_type as resultType
+		from
+		biomarker_test where study_id=#{studyId} and measure!='Mutation' group
+		by
+		biomarker,result_type order by biomarker
+	</select>
+
+	<select id="getBiomarkerTestScore" resultType="java.util.Map">
+		select
+		b.score,
+		pa.e_code as 'code',
+		p.groupids
+		from
+		biomarker_test b left
+		join
+		patient_group_info p
+		on
+		b.patient_id=p.patient_id
+		left join patient
+		pa
+		on b.patient_id=pa.guid
+		where
+		b.study_id=#{studyId} and
+		<foreach collection="patientGroupIdArr" item="patientGroupId"
+			index="index" open="(" separator="or" close=") and">p.groupids like
+			'%${patientGroupId}%'</foreach>
+		b.score is not null and
+		b.biomarker=#{gene} and
+		b.result_type=#{resultType}
+	</select>
+
+	<select id="getBiomarkerByIndicator"
+		resultType="com.movit.rwe.modules.bi.base.entity.hive.BiomarkerTest">
+		select b.reference_code as referenceCode,score as score,test_date as
+		testDate
+		from biomarker_test b
+		left join patient_group_info p on
+		b.patient_id=p.patient_id
+		where
+		b.study_id = #{studyId}
+		and biomarker =
+		#{indicator}
+		and test_date is not null
+		and measure!='Mutation'
+		and
+		result_type= #{resultType}
+		<choose>
+			<when test="cohorts.length==0">
+				and p.groupids like ''
+			</when>
+			<otherwise>
+				<if test="!(cohorts.length==1 and cohorts[0]=='%%')">
+					<foreach collection="cohorts" item="cohort" open="and ("
+						close=")" separator="or">
+						p.groupids like #{cohort}
+					</foreach>
+				</if>
+			</otherwise>
+		</choose>
+
+		order by test_date
+	</select>
+
+	<select id="findBiomarker"
+		resultType="com.movit.rwe.modules.bi.base.entity.hive.BiomarkerTest">
+		select guid as guid, biomarker as biomarker
+		from
+		biomarker_test
+		where study_id=#{studyId}
+		group by biomarker
+		order by
+		biomarker
+	</select>
+
+	<select id="findBiomarkerTestFilter" resultType="java.util.Map">
+		select b.measure
+		as measure,b.biomarker as biomarker,b.filed1 as position,b.filed2 as
+		exon,b.filed3 as changetype
+		from
+		biomarker_test b
+		where b.study_id = #{studyId}
+	</select>
+	
+	<select id="getBiomarkerTimes" resultType="java.lang.Integer">
+		select b.times from (
+		select a.patient_id,a.biomarker,count(DISTINCT a.visit_id) as times
+		from biomarker_test a
+		left join patient_group_info p on a.patient_id=p.patient_id
+		where a.study_id = #{studyId}
+		and a.measure = #{measureType}
+		<if test="cohorts!=null">
+		<choose>
+			<when test="cohorts.length==0">
+				and p.groupids like ''
+			</when>
+			<otherwise>
+				<if test="!(cohorts.length==1 and cohorts[0]=='%%')">
+					<foreach collection="cohorts" item="cohort" open="and ("
+						close=")" separator="or">
+						p.groupids like #{cohort}
+					</foreach>
+				</if>
+			</otherwise>
+		</choose>
+		</if>
+		group by a.patient_id,a.biomarker
+		) b
+		group by b.times
+		order by b.times
+	</select>
+	
+</mapper>

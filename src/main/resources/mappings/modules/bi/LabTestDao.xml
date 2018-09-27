@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.movit.rwe.modules.bi.base.dao.hive.LabTestDao">
+
+	<select id="getAllLabTest"
+		resultType="com.movit.rwe.modules.bi.base.entity.hive.LabTest">
+
+		select guid,indicator,result_unit as resultUnit,lower_ref lowerRef,up_ref as
+		upRef
+		from lab_test
+		where indicator is not null
+		and study_id=#{studyId}
+		ORDER BY indicator,ABS(datediff(now(),assay_date))
+
+	</select>
+
+
+	<select id="findAllIndicator" resultType="string">
+		select indicator from lab_test where study_id=#{studyId} group by indicator order by indicator;
+	</select>
+
+	
+	<select id="getLabTestResult" resultType="java.util.Map">
+		select
+		b.result as score,
+		pa.e_code as 'code',
+		p.groupids
+		from
+		lab_test b left
+		join patient_group_info p
+		on
+		b.patient_id=p.patient_id
+		left join patient pa
+		on b.patient_id=pa.guid
+		where
+		b.study_id=#{studyId} and 
+		<foreach collection="patientGroupIdArr" item="patientGroupId" index="index" 
+			open="(" separator="or" close=") and">p.groupids like '%${patientGroupId}%'</foreach>
+		cast(result as int) is not null and
+		b.indicator=#{indicator}  
+	</select>
+	
+	<select id="getLabTestByIndicator" resultType="com.movit.rwe.modules.bi.base.entity.hive.LabTest">
+		select b.reference_code as referenceCode,result as result,assay_date as assayDate
+		from lab_test b 
+		left join patient_group_info p on b.patient_id=p.patient_id
+		where b.study_id = #{studyId}
+		      and indicator = #{indicator}
+		      and result_unit= #{resultType}
+		
+		<choose>
+			<when test="cohorts.length==0">
+				and p.groupids like ''
+			</when>
+			<otherwise>
+				<if test="!(cohorts.length==1 and cohorts[0]=='%%')">
+					<foreach collection="cohorts" item="cohort" open="and ("
+						close=")" separator="or">
+						p.groupids like #{cohort}
+					</foreach>
+				</if>	
+			</otherwise>
+		</choose> 
+   		order by assay_date
+	</select>
+	
+	
+</mapper>

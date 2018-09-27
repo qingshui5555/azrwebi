@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.movit.rwe.modules.bi.base.dao.mysql.CohortDao">
+    
+	<sql id="cohortColumns">
+		a.id,
+		a.studyId,
+		a.cohortName,
+		a.cohortEcode,
+		a.patientCount,
+		a.createBy,
+		a.createDate,
+		a.updateBy,
+		a.updateDate,
+		a.remarks,
+		a.delFlag
+	</sql>
+    
+    <sql id="cohortJoins">
+    </sql>
+    
+	<select id="getAllCohortUnionGroup" resultType="java.util.HashMap">
+		select * from (
+		SELECT 
+			a.id,
+			a.studyId,
+			a.cohortName,
+			a.cohortEcode,
+			a.patientCount,
+			a.createBy,
+			a.createDate,
+			a.updateBy,
+			a.updateDate,
+			a.remarks,
+			a.delFlag,
+			'C' as flag
+		FROM md_cohort a 
+		order by (a.id+0)
+		) aa
+		UNION ALL
+		select * from (
+		SELECT
+			id,
+			studyId,
+			groupName "cohortName",
+			groupCode "cohortEcode",
+			actualNum "patientCount",
+			createBy,
+			createDate,
+			updateBy,
+			updateDate,
+			remarks,
+			delFlag,
+			'G' as flag
+		FROM
+			md_group
+		order by (id+0)
+		) bb
+	</select>
+	
+	<select id="get" resultType="com.movit.rwe.modules.bi.base.entity.mysql.Cohort">
+		SELECT 
+			<include refid="cohortColumns"/>
+		FROM md_cohort a 
+		<include refid="cohortJoins"/>
+		WHERE a.id = #{id}
+		and a.delFlag = '0'
+	</select>
+	
+	<select id="findList" resultType="com.movit.rwe.modules.bi.base.entity.mysql.Cohort">
+		SELECT 
+			<include refid="cohortColumns"/>
+		FROM md_cohort a
+		<include refid="cohortJoins"/>
+		WHERE a.del_flag = #{DEL_FLAG_NORMAL} 
+		<if test="studyId != null and studyId != ''">
+			AND a.studyId = #{studyId} 
+		</if>
+		<if test="cohortName != null and cohortName != ''">
+			AND a.cohortName LIKE 
+				<if test="dbName == 'oracle'">'%'||#{cohortName}||'%'</if>
+				<if test="dbName == 'mssql'">'%'+#{cohortName}+'%'</if>
+				<if test="dbName == 'mysql'">concat('%',#{cohortName},'%')</if>
+		</if>
+		<if test="cohortEcode != null and cohortEcode != ''">
+			AND a.cohortEcode = #{cohortEcode} 
+		</if>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.sort ASC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="com.movit.rwe.modules.bi.base.entity.mysql.Cohort">
+		SELECT
+			<include refid="cohortColumns"/>
+		FROM md_cohort a
+		<include refid="cohortJoins"/>
+		WHERE a.del_flag = #{DEL_FLAG_NORMAL}
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.sort ASC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO md_cohort(
+			id,
+	  		studyId,
+			cohortName,
+			cohortEcode,
+			patientCount,
+			createBy,
+			createDate,
+			updateBy,
+			updateDate,
+			remarks, 
+			delFlag
+		) VALUES (
+			#{id}, 
+			#{studyId},  
+			#{cohortName},
+			#{cohortEcode},
+			#{patientCount},
+			#{createBy.id}, 
+			#{createDate}, 
+			#{updateBy.id}, 
+			#{updateDate}, 
+			#{remarks},
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE md_cohort SET 
+			studyId = #{studyId}, 
+			cohortName = #{cohortName}, 
+			cohortEcode = #{cohortEcode}, 
+			patientCount = #{patientCount}, 
+			update_by = #{updateBy.id}, 
+			update_date = #{updateDate}, 
+			remarks = #{remarks}
+		WHERE id = #{id}
+	</update>
+	
+	<update id="delete">
+		UPDATE md_cohort SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id} 
+	</update>
+	
+	<select id="getCohortName" resultType="string">
+	    select cohortName from md_cohort where id=#{id}
+	</select>
+</mapper>

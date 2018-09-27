@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.movit.rwe.modules.bi.base.dao.hive.HivePatientDao">
+
+	<select id="queryListAll" resultType="com.movit.rwe.modules.bi.base.entity.hive.HivePatient">
+	  select p.guid, p.study_id as studyId, p.group_guid as groupGuid, p.reference_code as referenceCode, p.location_id as locationId, p.location_name as locationName, p.gender, p.birthday, p.race, p.create_by as createBy, p.create_on as createOn, cm.cohortIds
+	  from rwebox.patient p left join (select patient_id, group_concat(cast(cohort_id as string), ',') as cohortIds from rwebox.cohort_member group by patient_id) cm on p.guid = cm.patient_id
+	  where 1=1
+		<if test="studyIds != null and studyIds.length > 0">
+			and p.study_id in
+			<foreach collection="studyIds" item="studyId" open="(" close=")" separator=",">
+				#{studyId}
+			</foreach>
+		</if>
+	</select>
+</mapper>

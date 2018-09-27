@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.movit.rwe.modules.bi.base.dao.mysql.StudyDao">
+
+	<sql id="study_allColumns">
+		`md_study`.`id`,
+		`md_study`.`studyName`,
+		`md_study`.`studyCode`,
+		`md_study`.`taId`,
+		`md_study`.`sort`,
+		`md_study`.`state`,
+		`md_study`.`patientCount`,
+		`md_study`.`startDate`,
+		`md_study`.`endDate`,
+		`md_study`.`remarks`,
+		`md_study`.`createBy`,
+		`md_study`.`createDate`,
+		`md_study`.`updateBy`,
+		`md_study`.`updateDate`,
+		`md_study`.`delFlag`
+	</sql>
+
+	<select id="findAllStudy" resultType="com.movit.rwe.modules.bi.base.entity.mysql.Study">
+		SELECT
+		<include refid="study_allColumns" />
+		FROM md_study
+		WHERE
+		`md_study`.`delFlag` = 0
+		order by
+		`md_study`.`taId`
+	</select>
+
+	<select id="findListByTaId" resultType="com.movit.rwe.modules.bi.base.entity.mysql.Study">
+		SELECT
+		<include refid="study_allColumns" />
+		FROM md_study
+		WHERE
+		`md_study`.`taId` = #{taId}
+		and
+		`md_study`.`delFlag` =
+		0
+		order by
+		`md_study`.`sort`
+	</select>
+
+	<select id="findVoListByTaId" resultType="com.movit.rwe.modules.bi.sys.vo.StudyVo">
+		SELECT
+		md_study.id,
+		md_ta.taName,
+		md_study.studyCode,
+		md_study.studyName,
+		md_study.updateDate as 'lastModifyDate',
+		cb_dashboard.id as
+		'dashboardId',
+		md_study.taId,
+		md_ta.remarks as 'remarks',
+		(SELECT
+		COUNT(*)
+		FROM
+		cb_tab
+		WHERE
+		cb_tab.dashBoardId = cb_dashboard.id and delFlag=0) as 'tabNum'
+		FROM
+		md_study
+		LEFT JOIN
+		md_ta ON md_study.taId = md_ta.id
+		LEFT JOIN
+		cb_dashboard ON md_study.id = cb_dashboard.studyId
+		WHERE
+		(md_study.taId
+		= #{taId} OR #{taId} IS NULL)
+		AND md_study.delFlag = 0
+		ORDER BY
+		md_study.sort
+	</select>
+
+	<select id="findVoList" resultType="com.movit.rwe.modules.bi.sys.vo.StudyVo">
+		SELECT
+		md_study.id,
+		md_ta.taName,
+		md_study.studyCode,
+		md_study.studyName,
+		md_study.updateDate as 'lastModifyDate',
+		cb_dashboard.id as
+		'dashboardId',
+		md_study.taId,
+		(SELECT
+		COUNT(*)
+		FROM
+		cb_tab
+		WHERE
+		cb_tab.dashBoardId = cb_dashboard.id) as 'tabNum'
+		FROM
+		md_study
+		LEFT JOIN
+		md_ta ON md_study.taId = md_ta.id
+		LEFT JOIN
+		cb_dashboard ON md_study.id
+		= cb_dashboard.studyId
+		WHERE
+		md_study.taId is not null AND
+		md_study.delFlag = 0
+		ORDER BY md_study.sort
+	</select>
+
+	<select id="get" resultType="com.movit.rwe.modules.bi.base.entity.mysql.Study">
+		SELECT
+		<include refid="study_allColumns" />
+		FROM md_study
+		WHERE md_study.id = #{id} and `md_study`.`delFlag` = 0
+	</select>
+
+	<update id="updateTaName">
+		update md_study set
+		taId=#{taId},updateDate=#{updateDate},updateBy=#{userId}
+		where
+		id=#{studyId}
+	</update>
+
+	<update id="updateStudyTime">
+		update md_study set updateDate=now()
+		where id=#{taId}
+	</update>
+</mapper>

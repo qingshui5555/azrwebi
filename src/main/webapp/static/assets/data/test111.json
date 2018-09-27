@@ -1,0 +1,223 @@
+{
+    "name": "",
+    "value": 0,
+	"level": "white",
+    "children": [
+		{
+			"name": "OUTPATIENT VISIT",
+			"value": 50,
+			"level": "red",
+			"children": [
+				{
+					"name": "OUTPATIENT VISIT",
+					"value": 30,
+					"level": "blue"
+				},
+				{
+					"name": "EMERGENCY ROOM VISIT",
+					"value": 20,
+					"level": "blue"
+				},
+				{
+					"name": "OUTPATIENT HOSPITAL",
+					"value": 18,
+					"level": "blue"
+				},
+				{
+					"name": "OFFICE",
+					"value": 15,
+					"level": "blue",
+					"children": [
+						{
+							"name": "OUTPATIENT VISIT",
+							"value": 20,
+							"level": "orange"
+						},
+						{
+							"name": "OFFICE",
+							"value": 19,
+							"level": "orange"
+						},
+						{
+							"name": "OUTPATIENT HOSPITAL",
+							"value": 18,
+							"level": "orange"
+						},
+						{
+							"name": "INDEPENDENT LABORATORY",
+							"value": 17,
+							"level": "orange"
+						},
+						{
+							"name": "EMERGENCY ROOM - HOSPITAL",
+							"value": 16,
+							"level": "orange"
+						},
+						{
+							"name": "HOME",
+							"value": 15,
+							"level": "orange"
+						},
+						{
+							"name": "INPATIENT HOSPITAL",
+							"value": 13,
+							"level": "orange",
+							"children": [
+								{
+									"name": "INPATIENT HOSPITAL",
+									"value": 2,
+									"level": "purple"
+								},
+								{
+									"name": "OUTPATIENT VISIT",
+									"value": 2,
+									"level": "purple"
+								},
+								{
+									"name": "OUTPATIENT HOSPITAL",
+									"value": 2,
+									"level": "purple"
+								},
+								{
+									"name": "OFFICE",
+									"value": 1,
+									"level": "purple"
+								},
+								{
+									"name": "AMBULANCE - LAND",
+									"value": 1,
+									"level": "purple"
+								},
+								{
+									"name": "EMERGENCY ROOM VISIT",
+									"value": 1,
+									"level": "purple"
+								},
+								{
+									"name": "EMERGENCY ROOM - HOSPITAL",
+									"value": 1,
+									"level": "purple"
+								},
+								{
+									"name": "HOME",
+									"value": 1,
+									"level": "purple"
+								},
+								{
+									"name": "INDEPENDENT LABORATORY",
+									"value": 1,
+									"level": "purple"
+								},
+								{
+									"name": "OUTPATIENT NEC",
+									"value": 1,
+									"level": "purple"
+								},
+								{
+									"name": "SKILLED NURSING FACILITY",
+									"value": 1,
+									"level": "purple"
+								},
+								{
+									"name": "URGENT CARE FACILITY",
+									"value": 1,
+									"level": "purple"
+								}
+							]
+						},
+						{
+							"name": "AMBULATORY SURGICAL CENTER",
+							"value": 12,
+							"level": "orange"
+						},
+						{
+							"name": "EMERGENCY ROOM VISIT",
+							"value": 10,
+							"level": "orange"
+						},
+						{
+							"name": "OTHER PLACE OF SERVICE",
+							"value": 9,
+							"level": "orange"
+						}
+					]
+				},
+				{
+					"name": "INDEPENDENT LABORATORY",
+					"value": 12,
+					"level": "blue"
+				},
+				{
+					"name": "INPATIENT HOSPITAL",
+					"value": 10,
+					"level": "blue"
+				},
+				{
+					"name": "EMERGENCY ROOM - HOSPITAL",
+					"value": 9,
+					"level": "blue"
+				},
+				{
+					"name": "HOME",
+					"value": 8,
+					"level": "blue"
+				},
+				{
+					"name": "AMBULATORY SURGICAL CENTER",
+					"value": 5,
+					"level": "blue"
+				},
+				{
+					"name": "OTHER PLACE OF SERVICE",
+					"value": 2,
+					"level": "blue"
+				}
+			]
+		},
+		{
+			"name": "OFFICE",
+			"value": 30,
+			"level": "red"
+		},
+		{
+			"name": "OUTPATIENT HOSPITAL",
+			"value": 28,
+			"level": "red"
+		},
+		{
+			"name": "EMERGENCY ROOM VISIT",
+			"value": 25,
+			"level": "red"
+		},
+		{
+			"name": "INDEPENDENT LABORATORY",
+			"value": 20,
+			"level": "red"
+		},
+		{
+			"name": "INPATIENT HOSPITAL",
+			"value": 19,
+			"level": "red"
+		},
+		{
+			"name": "HOME",
+			"value": 16,
+			"level": "red"
+		},
+		{
+			"name": "EMERGENCY ROOM - HOSPITAL",
+			"value": 15,
+			"level": "red"
+		},
+		{
+			"name": "OTHER PLACE OF SERVICE",
+			"value": 12,
+			"level": "red"
+		},
+		{
+			"name": "SKILLED NURSING FACILITY",
+			"value": 10,
+			"level": "red"
+		}
+    ]
+}

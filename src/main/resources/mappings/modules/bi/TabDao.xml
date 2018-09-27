@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.movit.rwe.modules.bi.base.dao.mysql.TabDao">
+
+	<select id="findAll" resultType="com.movit.rwe.modules.bi.base.entity.mysql.Tab">
+		SELECT distinct
+		cb_tab.id as
+		'id',
+		cb_tab.name as 'name',
+		cb_tab_icon.icon as 'icon',
+		cb_tab.sort as 'sort',
+		cb_tab.createDate as
+		'createDate',
+		cb_tab.updateDate as 'updateDate',
+		cb_tab.dashboardId as 'dashboardId'
+		FROM
+		cb_tab
+		LEFT JOIN
+		cb_tab_view ON cb_tab.dashboardId =
+		cb_tab_view.dashboardId
+		left join cb_tab_icon on cb_tab_icon.id = cb_tab.iconId
+		WHERE
+		cb_tab.dashboardId = #{dashboardId}
+		and
+		cb_tab.delFlag = 0
+		order by
+		cb_tab.sort
+	</select>
+
+	<insert id="insert">
+		INSERT INTO cb_tab(
+		id,
+		name,
+		iconId,
+		sort,
+		dashboardId,
+		createBy,
+		createDate,
+		updateBy,
+		updateDate,
+		remarks,
+		delFlag
+		) VALUES (
+		#{id},
+		#{name},
+		#{icon},
+		#{sort},
+		#{dashboardId},
+		#{createBy.id},
+		#{createDate},
+		#{updateBy.id},
+		#{updateDate},
+		#{remarks},
+		#{delFlag}
+		)
+	</insert>
+
+	<update id="delete">
+		UPDATE cb_tab SET
+		delFlag =
+		#{DEL_FLAG_DELETE},updateDate=#{updateDate},updateBy=#{updateBy.id}
+		WHERE id = #{id}
+	</update>
+
+	<update id="sortTab">
+		UPDATE cb_tab SET
+		sort =
+		#{sort},updateDate=#{updateDate},updateBy=#{updateBy.id}
+		WHERE id =
+		#{id}
+	</update>
+
+	<select id="findMaxTabSort" resultType="string">
+		SELECT
+		max(cb_tab.sort)
+		FROM
+		cb_tab
+		WHERE
+		cb_tab.dashboardId =
+		#{dashboardId}
+		and
+		cb_tab.delFlag = 0
+	</select>
+
+	<select id="findById" resultType="com.movit.rwe.modules.bi.base.entity.mysql.Tab">
+		SELECT
+		cb_tab.id as
+		'id',
+		cb_tab.name as 'name',
+		cb_tab.iconId as 'icon',
+		cb_tab.sort as 'sort',
+		cb_tab.createDate as
+		'createDate',
+		cb_tab.dashboardId as 'dashboardId'
+		FROM
+		cb_tab
+		WHERE
+		cb_tab.id=#{tabId}
+	</select>
+
+	<update id="update">
+		UPDATE cb_tab SET
+		name =
+		#{tabName},iconId=#{iconId},sort=#{sort},updateBy=#{userId},updateDate=#{date}
+		WHERE id
+		= #{tabId}
+	</update>
+	
+	<update id="updateDate">
+		UPDATE cb_tab SET
+		updateDate=now()
+		WHERE id
+		= #{tabId}
+	</update>
+</mapper>

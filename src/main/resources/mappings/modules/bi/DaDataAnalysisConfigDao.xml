@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.movit.rwe.modules.bi.base.dao.mysql.DaDataAnalysisConfigDao">
+    
+	<sql id="daDataAnalysisConfigColumns">
+		a.id,
+		a.modelMetaId,
+		a.modelColumnMetaIds,
+		a.analysisName,
+		a.analysisType,
+		a.analysisQuerySql,
+		a.analysisConfig,
+		a.resultContent,
+		a.sort,
+		a.createBy,
+		a.createDate,
+		a.updateBy,
+		a.updateDate,
+		a.remarks,
+		a.delFlag
+	</sql>
+	
+	<sql id="daDataAnalysisConfigJoins">
+    </sql>
+    
+	<select id="get" resultType="com.movit.rwe.modules.bi.base.entity.mysql.DaDataAnalysisConfig">
+		SELECT 
+			<include refid="daDataAnalysisConfigColumns"/>
+		FROM da_data_analysis_config a
+		WHERE a.id = #{id} 
+		and a.delFlag = '0'
+	</select>
+	
+	<select id="findList" resultType="com.movit.rwe.modules.bi.base.entity.mysql.DaDataAnalysisConfig">
+		SELECT 
+			<include refid="daDataAnalysisConfigColumns"/>
+		FROM da_data_analysis_config a
+		<include refid="daDataAnalysisConfigJoins"/>
+		WHERE a.delFlag = #{DEL_FLAG_NORMAL} 
+		<if test="modelMetaId != null and modelMetaId != ''">
+			AND a.modelMetaId = #{modelMetaId}
+		</if>
+		<if test="analysisName != null and analysisName != ''">
+			AND a.analysisName LIKE 
+				<if test="dbName == 'oracle'">'%'||#{analysisName}||'%'</if>
+				<if test="dbName == 'mssql'">'%'+#{analysisName}+'%'</if>
+				<if test="dbName == 'mysql'">concat('%',#{analysisName},'%')</if>
+		</if>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.sort ASC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="com.movit.rwe.modules.bi.base.entity.mysql.DaDataAnalysisConfig">
+		SELECT
+			<include refid="daDataAnalysisConfigColumns"/>
+		FROM da_data_analysis_config a
+		<include refid="daDataAnalysisConfigJoins"/>
+		WHERE a.delFlag = #{DEL_FLAG_NORMAL}
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.sort ASC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO da_data_analysis_config(
+			id,
+			modelMetaId,
+			modelColumnMetaIds,
+			analysisName,
+			analysisType,
+			analysisQuerySql,
+			analysisConfig,
+			resultContent,
+			sort,
+			createBy,
+			createDate,
+			updateBy,
+			updateDate,
+			remarks,
+			delFlag
+		) VALUES (
+			#{id}, 
+			#{modelMetaId},  
+			#{modelColumnMetaIds}, 
+			#{analysisName}, 
+			#{analysisType}, 
+			#{analysisQuerySql}, 
+			#{analysisConfig}, 
+			#{resultContent}, 
+			#{sort}, 
+			#{createBy.id}, 
+			#{createDate}, 
+			#{updateBy.id}, 
+			#{updateDate}, 
+			#{remarks}, 
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE da_data_analysis_config SET 
+			modelMetaId = #{modelMetaId},  
+			modelColumnMetaIds = #{modelColumnMetaIds}, 
+			analysisName = #{analysisName}, 
+			analysisType = #{analysisType}, 
+			analysisQuerySql = #{analysisQuerySql}, 
+			analysisConfig = #{analysisConfig}, 
+			resultContent = #{resultContent}, 
+			sort = #{sort}, 
+			updateBy = #{updateBy.id}, 
+			updateDate = #{updateDate}, 
+			remarks = #{remarks}
+		WHERE id = #{id}
+	</update>
+	
+	<update id="delete">
+		UPDATE da_data_analysis_config SET 
+			delFlag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id} 
+	</update>
+</mapper>
