@@ -1,0 +1,533 @@
+hive建表
+
+use rwe;
+
+create table treatment(
+guid string,
+study_id string,
+patient_id string,
+ta_guid string,
+visit_guid string,
+solution string,
+type string,
+start_date timestamp,
+end_date timestamp,
+curative_effect string,
+cycle string
+) ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t';
+
+
+create table study(
+guid string,
+ta_id string,
+name string,
+code string
+) ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t';
+
+
+create table therapeutic_area(
+guid string,
+name string,
+code string
+) ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t';
+
+
+create table patient(
+guid string,
+e_code string,
+study_id string,
+group_guid string,
+center string,
+gender string,
+race string,
+birthday timestamp,
+height int,
+weight int
+) ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t';
+
+
+create table patient_group(
+guid string,
+study_id string,
+ta_id string,
+group_name string
+) ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t';
+
+
+create table med_dosing_schedule(
+guid string,
+ta_guid string,
+patient_guid string,
+study_guid string,
+treatment_id string,
+route string,
+frequency string,
+frequency_unit string,
+is_combination boolean,
+drug string,
+target string,
+dosing double,
+dosing_unit string,
+dosing_date timestamp,
+start_date timestamp,
+end_date timestamp,
+comment string,
+action_taken string
+) ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t';
+
+
+create table cost(
+guid string,
+ta_id string,
+study_id string,
+patient_id string,
+visit_id string,
+payer_type string,
+cost_date timestamp,
+category string,
+amount decimal(15,2),
+item string,
+unit string,
+total_cost decimal(15,2),
+self_paid decimal(15,2),
+individual_self_paid decimal(15,2),
+other_paid decimal(15,2),
+sort_value int
+) ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t';
+
+create table stg_cost(
+guid string,
+ta_id string,
+study_id string,
+patient_id string,
+visit_id string,
+payer_type string,
+cost_date timestamp,
+category string,
+amount decimal(15,2),
+item string,
+unit string,
+total_cost decimal(15,2),
+self_paid decimal(15,2),
+individual_self_paid decimal(15,2),
+other_paid decimal(15,2),
+sort_value int
+) ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t';
+
+create table survival(
+guid string,
+patient_id string,
+study_id string,
+reference_code string,
+diagnosis_time timestamp,
+death_time timestamp
+) ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t';
+
+create table stg_survival(
+guid string,
+patient_id string,
+study_id string,
+reference_code string,
+diagnosis_time timestamp,
+death_time timestamp
+) ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t';
+
+create table side_effection(
+guid string,              
+effection_name string,
+effection_guid string, 
+effection_value string,           
+parent_effection_guid string,
+parent_effection_name string,
+parent_is_top boolean,
+drug string,
+patient_id string,
+treatment_guid string,
+description string,
+treatment_start_date timestamp
+) ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t';
+
+create table effection_dict(
+guid string,              
+effection_name string,
+parent_effection_guid string,
+concept_id string
+) ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t';
+
+create table cohort
+(
+   guid                 string,
+   name                 string,
+   study_id             string,
+   ta_id                string,
+   patient_count        int
+)ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t';
+
+create table cohort_member
+(
+   guid                 string,
+   cohort_id             string,
+   patient_id                 string
+)ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t';
+
+create table biomarker_test(
+guid string,
+patient_id string,
+study_id string,
+ta_id string,
+visit_id string,
+profiling_id int,
+test_location string,
+profiling_type string,
+measure string,
+technology string,
+gene string,  
+biomarker string,
+score DECIMAL(10,2),
+misc string,
+assay_sample string,
+tma_section_id int,
+result_type string,
+unit string,
+data_source_id int,            
+evaluation string,
+reference_code string,
+sample_storage_type_name string,
+test_date timestamp,
+symbol_standards string,
+filed1 string,
+filed2 string,
+filed3 string,
+filed4 string,
+filed5 string
+) ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t';
+
+create table treatment_journey_info
+(
+   guid                 string,
+   study_id             string,
+   patient_id           string,
+   reference_code       string,
+   ta_id                string,
+   medication_regimen   string,
+   cur_level            int,
+   time_days                 timestamp
+   ) ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t';
+   
+ create table patient_group_info
+(
+   patient_id                 string,
+   groupids             string   
+)ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t';  
+
+create table patient_history
+(
+   guid                 string,
+   patient_id           string,
+   name             string,
+   value               string
+)ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t';
+
+create table lab_test
+(
+   guid                 string,
+   patient_id           string,
+   study_id             string,
+   ta_id                string,
+   visit_id             bigint,
+   reference_code       string,
+   lab_group            string,
+   sample_name          string,
+   sample_type          string,
+   name                 string,
+   technology                 string,
+   indicator               string,
+   description                string,
+   type                 string,
+   result_unit                 string,
+   result                 string,
+   lower_ref                   DOUBLE ,
+   up_ref                   DOUBLE ,
+   evaluation                   string,
+   assay_date                 timestamp
+)ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t';
+
+create table patient_event
+(
+   guid                 string,
+   study_id             string,
+   patient_id           string,
+   reference_code       string,
+   event_name           string,
+   event_type           string,
+   event_datetime       timestamp,
+   assessment_response  string,
+   description          string,
+   death_time	        timestamp
+) ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t';
+
+create table stg_patient_event
+(
+   guid                 string,
+   study_id             string,
+   patient_id           string,
+   reference_code       string,
+   event_name           string,
+   event_type           string,
+   event_datetime       timestamp,
+   assessment_response  string,
+   description          string,
+   death_time	        timestamp
+) ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t';
+
+
+create table surgery
+(
+  guid                 string,
+   patient_id           string,
+   study_id             string,
+   ta_id                string,
+   visit_id             string,
+   reference_id         string,
+   source               string,
+   name                 string,
+   type                 string,
+   therapeutic_effect               string,
+   surgery_date         timestamp
+)ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t';
+
+create table survey
+(
+   guid                 string,
+   visit_id             string,
+   patient_id           string,
+   ta_id                string,
+   study_id             string,
+   survey_date          timestamp,
+   description                 string,
+   name                 string,
+   category               string,
+   score                  DOUBLE,
+   source                  string
+)ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t';
+
+create table pathological_stage
+(
+   id string,
+   patient_id string,
+   study_id string,
+   pathological_stage string,
+   type string
+)ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t';
+
+create table stg_pathological_stage
+(
+   id string,
+   patient_id string,
+   study_id string,
+   pathological_stage string,
+   type string
+)ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t';
+
+
+create table stg_patient(
+guid string,
+e_code string,
+study_id string,
+group_guid string,
+center string,
+gender string,
+race string,
+birthday timestamp,
+height int,
+weight int
+) ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t';
+
+create table stg_treatment(
+guid string,
+study_id string,
+patient_id string,
+ta_guid string,
+visit_guid string,
+solution string,
+type string,
+start_date timestamp,
+end_date timestamp,
+curative_effect string,
+cycle string
+) ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t';
+
+create table stg_med_dosing_schedule(
+guid string,
+ta_guid string,
+patient_guid string,
+study_guid string,
+treatment_id string,
+route string,
+frequency string,
+frequency_unit string,
+is_combination boolean,
+drug string,
+target string,
+dosing int,
+dosing_unit string,
+dosing_date timestamp,
+start_date timestamp,
+end_date timestamp,
+comment string,
+action_taken string
+) ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t';
+
+create table stg_side_effection(
+guid string,              
+effection_name string,
+effection_guid string, 
+effection_value string,           
+parent_effection_guid string,
+parent_effection_name string,
+parent_is_top boolean,
+drug string,
+patient_id string,
+treatment_guid string,
+description string,
+treatment_start_date timestamp
+) ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t';
+
+create table stg_biomarker_test(
+guid string,
+patient_id string,
+study_id string,
+ta_id string,
+visit_id string,
+profiling_id int,
+test_location string,
+profiling_type string,
+measure string,
+technology string,
+gene string,  
+biomarker string,
+score DECIMAL(10,2),
+misc string,
+assay_sample string,
+tma_section_id int,
+result_type string,
+unit string,
+data_source_id int,            
+evaluation string,
+reference_code string,
+sample_storage_type_name string,
+test_date timestamp,
+symbol_standards string,
+filed1 string,
+filed2 string,
+filed3 string,
+filed4 string,
+filed5 string
+) ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t';
+
+create table stg_treatment_journey_info
+(
+   guid                 string,
+   study_id             string,
+   patient_id           string,
+   reference_code       string,
+   ta_id                string,
+   medication_regimen   string,
+   cur_level            int,
+   time_days                 timestamp
+) ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t';
+
+create table stg_lab_test
+(
+   guid                 string,
+   patient_id           string,
+   study_id             string,
+   ta_id                string,
+   visit_id             bigint,
+   reference_code       string,
+   lab_group            string,
+   sample_name          string,
+   sample_type          string,
+   name                 string,
+   technology                 string,
+   indicator               string,
+   description                string,
+   type                 string,
+   result_unit                 string,
+   result                 string,
+   lower_ref                   DOUBLE ,
+   up_ref                   DOUBLE ,
+   evaluation                   string,
+   assay_date                 timestamp
+)ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t';
+
+create table diagnose
+(
+   guid               string,
+   patient_id         string,
+   study_id           string,
+   ta_id              string,
+   visit_id           string,
+   hcp                string,
+   diagnose_date      timestamp,
+   comments           string
+) ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t';
+
+create table stg_diagnose
+(
+   guid               string,
+   patient_id         string,
+   study_id           string,
+   ta_id              string,
+   visit_id           string,
+   hcp                string,
+   diagnose_date      timestamp,
+   comments           string
+) ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t';
+
+create table diagnose_attributes
+(
+   guid              string,
+   diagnose_id       string,
+   name              string,
+   value             string
+) ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t';
+
+create table stg_diagnose_attributes
+(
+   guid              string,
+   diagnose_id       string,
+   name              string,
+   value             string
+) ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t';
+
+
+create table stg_surgery
+(
+  guid                 string,
+   patient_id           string,
+   study_id             string,
+   ta_id                string,
+   visit_id             string,
+   reference_id         string,
+   source               string,
+   name                 string,
+   type                 string,
+   therapeutic_effect               string,
+   surgery_date         timestamp
+)ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t';
+
+create table stg_survey
+(
+   guid                 string,
+   visit_id             string,
+   patient_id           string,
+   ta_id                string,
+   study_id             string,
+   survey_date          timestamp,
+   description                 string,
+   name                 string,
+   category               string,
+   score                  DOUBLE,
+   source                  string
+)ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t';
