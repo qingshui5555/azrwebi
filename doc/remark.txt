@@ -1,0 +1,5 @@
+svn info
+http://confluence.movit-tech.com:1020/confluence/display/AZ/Version+Control
+
+Risk / Issue List
+http://confluence.movit-tech.com:1020/confluence/pages/viewpage.action?pageId=46932085
